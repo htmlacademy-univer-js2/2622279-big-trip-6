@@ -1,42 +1,181 @@
+import EventPointView from '../view/route-point-view.js';
+import EventEditView from '../view/form-edit-view.js';
+import SortingView from '../view/sort-view.js';
 import FiltersView from '../view/filters-view.js';
-import SortView from '../view/sort-view.js';
-import FormCreateView from '../view/form-create-view.js';
-import FormEditView from '../view/form-edit-view.js';
-import RoutePointView from '../view/route-point-view.js';
-import {render} from '../render.js';
-
-const POINT_COUNT = 3;
 
 export default class Presenter {
-  constructor({filtersContainer, eventsContainer}) {
+  constructor({ filtersContainer, eventsContainer, eventsModel }) {
     this.filtersContainer = filtersContainer;
     this.eventsContainer = eventsContainer;
+    this.eventsModel = eventsModel;
+
+    this.eventViews = [];
   }
 
   init() {
-    this.filtersContainer.innerHTML = '';
-
-    const filtersView = new FiltersView();
-    render(filtersView, this.filtersContainer);
+    this.renderFilters();
 
     this.eventsContainer.innerHTML = '';
+    this.eventViews = [];
 
-    const sortView = new SortView();
-    render(sortView, this.eventsContainer);
+    this.renderSorting();
 
-    const eventsList = document.createElement('ul');
-    eventsList.className = 'trip-events__list';
-    this.eventsContainer.appendChild(eventsList);
+    const events = this.eventsModel.getAllFullEvents();
+    if (events.length > 0) {
+      this.renderEditForm(events[0]);
+    }
 
-    const formEditView = new FormEditView();
-    render(formEditView, eventsList);
+    this.renderEvents();
+  }
 
-    const formCreateView = new FormCreateView();
-    render(formCreateView, eventsList);
+  renderFilters() {
+    const filtersView = new FiltersView();
+    this.filtersContainer.innerHTML = '';
+    this.filtersContainer.appendChild(filtersView.getElement());
+  }
 
-    for (let i = 0; i < POINT_COUNT; i++) {
-      const pointView = new RoutePointView();
-      render(pointView, eventsList);
+  renderSorting() {
+    const sortingView = new SortingView();
+    this.eventsContainer.appendChild(sortingView.getElement());
+  }
+
+  renderEvents() {
+    const fullEvents = this.eventsModel.getAllFullEvents();
+
+    const sortedEvents = [...fullEvents].sort((a, b) =>
+      new Date(a.dateFrom) - new Date(b.dateFrom)
+    );
+
+    sortedEvents.forEach((event) => {
+      this.renderEvent(event);
+    });
+  }
+
+  renderEvent(event) {
+    const eventView = new EventPointView(
+      event,
+      event.destination,
+      event.offers
+    );
+
+    this.addEventListeners(eventView, event);
+    this.eventsContainer.appendChild(eventView.getElement());
+    this.eventViews.push(eventView);
+  }
+
+  renderEditForm() {
+    const editView = new EventEditView();
+    this.eventsContainer.prepend(editView.getElement());
+    this.addFormListeners(editView);
+    this.eventViews.push(editView);
+  }
+
+  addEventListeners(eventView, event) {
+    const element = eventView.getElement();
+    const rollupBtn = element.querySelector('.event__rollup-btn');
+
+    if (rollupBtn) {
+      rollupBtn.addEventListener('click', () => {
+        this.openEditForm(event);
+      });
+    }
+
+    const favoriteBtn = element.querySelector('.event__favorite-btn');
+
+    if (favoriteBtn) {
+      favoriteBtn.addEventListener('click', () => {
+        this.toggleFavorite(event);
+      });
+    }
+  }
+
+  addFormListeners(formView) {
+    const element = formView.getElement();
+    const form = element.querySelector('form');
+
+    if (form) {
+      form.addEventListener('submit', (evt) => {
+        evt.preventDefault();
+        this.handleFormSubmit();
+      });
+
+      const resetBtn = form.querySelector('.event__reset-btn');
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          this.handleFormReset(formView);
+        });
+      }
+
+      const rollupBtn = form.querySelector('.event__rollup-btn');
+      if (rollupBtn) {
+        rollupBtn.addEventListener('click', () => {
+          this.closeEditForm(formView);
+        });
+      }
+    }
+  }
+
+  openEditForm(event) {
+    const eventView = this.eventViews.find(
+      (view) => view.event && view.event.id === event.id
+    );
+
+    if (eventView) {
+      const editView = new EventEditView();
+      const editElement = editView.getElement();
+
+      eventView.getElement().replaceWith(editElement);
+
+      const index = this.eventViews.indexOf(eventView);
+      this.eventViews.splice(index, 1, editView);
+
+      this.addFormListeners(editView);
+    }
+  }
+
+  closeEditForm() {
+    this.init();
+  }
+
+  toggleFavorite(event) {
+    const updatedEvent = {
+      ...event,
+      isFavorite: !event.isFavorite
+    };
+
+    this.eventsModel.updateEvent(updatedEvent);
+    this.updateEventInList(updatedEvent);
+  }
+
+  handleFormSubmit() {
+    this.init();
+  }
+
+  handleFormReset(formView) {
+    if (formView.event && formView.event.id) {
+      this.eventsModel.deleteEvent(formView.event.id);
+    }
+    this.init();
+  }
+
+  updateEventInList(updatedEvent) {
+    const eventView = this.eventViews.find(
+      (view) => view.event && view.event.id === updatedEvent.id
+    );
+
+    if (eventView) {
+      const fullEvent = this.eventsModel.getEventById(updatedEvent.id);
+      const newEventView = new EventPointView(
+        fullEvent,
+        fullEvent.destination,
+        fullEvent.offers
+      );
+
+      eventView.getElement().replaceWith(newEventView.getElement());
+      const index = this.eventViews.indexOf(eventView);
+      this.eventViews.splice(index, 1, newEventView);
+      this.addEventListeners(newEventView, fullEvent);
     }
   }
 }
