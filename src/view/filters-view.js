@@ -23,15 +23,23 @@ function createFiltersTemplate() {
     </form>`
   );
 }
+
 export default class FiltersView {
+  constructor() {
+    this.element = null;
+  }
+
   getTemplate() {
     return createFiltersTemplate();
   }
 
   getElement() {
+
     if (!this.element) {
-      this.element = createElement(this.getTemplate());
+      const template = this.getTemplate();
+      this.element = createElement(template);
     }
+
     return this.element;
   }
 
