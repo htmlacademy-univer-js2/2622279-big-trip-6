@@ -1,64 +1,62 @@
-import {createElement} from '../render.js';
+import dayjs from 'dayjs';
+import AbstractView from '../framework/view/abstract-view.js';
 
 function createPointTemplate(event, destination, offers) {
-  const {type, dateFrom, dateTo, basePrice, isFavorite} = event;
+  const { type, dateFrom, dateTo, basePrice, isFavorite } = event;
   const destinationName = destination ? destination.name : '';
 
-  const date = new Date(dateFrom);
-  const month = date.toLocaleString('en', { month: 'short' }).toUpperCase();
-  const day = date.getDate();
-  const timeFrom = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const timeTo = new Date(dateTo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateISO = dayjs(dateFrom).format('YYYY-MM-DD');
+  const dateShort = dayjs(dateFrom).format('MMM DD');
+  const startTime = dayjs(dateFrom).format('HH:mm');
+  const endTime = dayjs(dateTo).format('HH:mm');
+  const duration = dayjs(dateTo).diff(dayjs(dateFrom), 'minute');
 
-  const diffMs = new Date(dateTo) - new Date(dateFrom);
-  const diffMins = Math.floor(diffMs / 60000);
-  let duration = '';
-
-  if (diffMins < 60) {
-    duration = `${diffMins}M`;
-  } else if (diffMins < 1440) {
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    duration = `${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
+  let durationFormatted = '';
+  if (duration < 60) {
+    durationFormatted = `${duration}M`;
+  } else if (duration < 1440) {
+    const hours = Math.floor(duration / 60);
+    const mins = duration % 60;
+    durationFormatted = `${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
   } else {
-    const days = Math.floor(diffMins / 1440);
-    const hours = Math.floor((diffMins % 1440) / 60);
-    const mins = diffMins % 60;
-    duration = `${days.toString().padStart(2, '0')}D ${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
+    const days = Math.floor(duration / 1440);
+    const hours = Math.floor((duration % 1440) / 60);
+    const mins = duration % 60;
+    durationFormatted = `${days.toString().padStart(2, '0')}D ${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
   }
 
   const favoriteClass = isFavorite ? 'event__favorite-btn--active' : '';
-  const eventTitle = destinationName
-    ? `${type} to ${destinationName}`
-    : type;
+  const eventTitle = destinationName ? `${type} to ${destinationName}` : type;
+
+  const offersTemplate = offers.slice(0, 3).map((offer) => `
+    <li class="event__offer">
+      <span class="event__offer-title">${offer.title}</span>
+      +€&nbsp;<span class="event__offer-price">${offer.price}</span>
+    </li>
+  `).join('');
 
   return (
-    `<li class="trip-events__item">
+    `<div class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${dateFrom}">${month} ${day}</time>
+        <time class="event__date" datetime="${dateISO}">${dateShort}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
         <h3 class="event__title">${eventTitle}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${dateFrom}">${timeFrom}</time>
+            <time class="event__start-time" datetime="${dayjs(dateFrom).toISOString()}">${startTime}</time>
             &mdash;
-            <time class="event__end-time" datetime="${dateTo}">${timeTo}</time>
+            <time class="event__end-time" datetime="${dayjs(dateTo).toISOString()}">${endTime}</time>
           </p>
-          <p class="event__duration">${duration}</p>
+          <p class="event__duration">${durationFormatted}</p>
         </div>
         <p class="event__price">
           €&nbsp;<span class="event__price-value">${basePrice}</span>
         </p>
         <h4 class="visually-hidden">Offers:</h4>
         <ul class="event__selected-offers">
-          ${offers.slice(0, 3).map((offer) => `
-            <li class="event__offer">
-              <span class="event__offer-title">${offer.title}</span>
-              +€&nbsp;<span class="event__offer-price">${offer.price}</span>
-            </li>
-          `).join('')}
+          ${offersTemplate}
         </ul>
         <button class="event__favorite-btn ${favoriteClass}" type="button">
           <span class="visually-hidden">Add to favorite</span>
@@ -70,29 +68,30 @@ function createPointTemplate(event, destination, offers) {
           <span class="visually-hidden">Open event</span>
         </button>
       </div>
-    </li>`
+    </div>`
   );
 }
 
-export default class RoutePointView {
-  constructor(event, destination, offers) {
-    this.event = event;
-    this.destination = destination;
-    this.offers = offers;
+export default class RoutePointView extends AbstractView {
+  #event = null;
+  #destination = null;
+  #offers = null;
+
+  constructor(event, destination, offers, onRollup, onFavorite) {
+    super();
+    this.#event = event;
+    this.#destination = destination;
+    this.#offers = offers;
+
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', onRollup);
+    this.element.querySelector('.event__favorite-btn').addEventListener('click', onFavorite);
   }
 
-  getTemplate() {
-    return createPointTemplate(this.event, this.destination, this.offers);
+  get template() {
+    return createPointTemplate(this.#event, this.#destination, this.#offers);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
+  getEvent() {
+    return this.#event;
   }
 }

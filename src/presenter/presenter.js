@@ -1,181 +1,76 @@
-import EventPointView from '../view/route-point-view.js';
-import EventEditView from '../view/form-edit-view.js';
+import { render } from '../framework/render.js';
 import SortingView from '../view/sort-view.js';
 import FiltersView from '../view/filters-view.js';
+import EventPresenter from './event-presenter.js';
 
 export default class Presenter {
-  constructor({ filtersContainer, eventsContainer, eventsModel }) {
-    this.filtersContainer = filtersContainer;
-    this.eventsContainer = eventsContainer;
-    this.eventsModel = eventsModel;
+  #filtersContainer = null;
+  #eventsContainer = null;
+  #eventsModel = null;
+  #offersModel = null;
+  #destinationsModel = null;
 
-    this.eventViews = [];
+  #filtersComponent = null;
+  #sortingComponent = null;
+  #eventPresenters = new Map();
+
+  constructor({ filtersContainer, eventsContainer, eventsModel, offersModel, destinationsModel }) {
+    this.#filtersContainer = filtersContainer;
+    this.#eventsContainer = eventsContainer;
+    this.#eventsModel = eventsModel;
+    this.#offersModel = offersModel;
+    this.#destinationsModel = destinationsModel;
   }
 
   init() {
-    this.renderFilters();
-
-    this.eventsContainer.innerHTML = '';
-    this.eventViews = [];
-
-    this.renderSorting();
-
-    const events = this.eventsModel.getAllFullEvents();
-    if (events.length > 0) {
-      this.renderEditForm(events[0]);
-    }
-
-    this.renderEvents();
+    this.#renderFilters();
+    this.#renderSorting();
+    this.#renderEvents();
   }
 
-  renderFilters() {
-    const filtersView = new FiltersView();
-    this.filtersContainer.innerHTML = '';
-    this.filtersContainer.appendChild(filtersView.getElement());
+  #renderFilters() {
+    this.#filtersComponent = new FiltersView();
+    render(this.#filtersComponent, this.#filtersContainer);
   }
 
-  renderSorting() {
-    const sortingView = new SortingView();
-    this.eventsContainer.appendChild(sortingView.getElement());
+  #renderSorting() {
+    this.#sortingComponent = new SortingView();
+    render(this.#sortingComponent, this.#eventsContainer);
   }
 
-  renderEvents() {
-    const fullEvents = this.eventsModel.getAllFullEvents();
-
+  #renderEvents() {
+    const fullEvents = this.#eventsModel.getAllFullEvents();
     const sortedEvents = [...fullEvents].sort((a, b) =>
       new Date(a.dateFrom) - new Date(b.dateFrom)
     );
 
     sortedEvents.forEach((event) => {
-      this.renderEvent(event);
+      this.#renderEvent(event);
     });
   }
 
-  renderEvent(event) {
-    const eventView = new EventPointView(
+  #renderEvent(event) {
+    const eventPresenter = new EventPresenter(
       event,
-      event.destination,
-      event.offers
+      this.#offersModel,
+      this.#destinationsModel
     );
 
-    this.addEventListeners(eventView, event);
-    this.eventsContainer.appendChild(eventView.getElement());
-    this.eventViews.push(eventView);
+    eventPresenter.init(this.#eventsContainer, (updatedEvent) => {
+      this.#handleEventChange(updatedEvent);
+    });
+
+    this.#eventPresenters.set(event.id, eventPresenter);
   }
 
-  renderEditForm() {
-    const editView = new EventEditView();
-    this.eventsContainer.prepend(editView.getElement());
-    this.addFormListeners(editView);
-    this.eventViews.push(editView);
-  }
+  #handleEventChange(updatedEvent) {
+    this.#eventsModel.updateEvent(updatedEvent);
 
-  addEventListeners(eventView, event) {
-    const element = eventView.getElement();
-    const rollupBtn = element.querySelector('.event__rollup-btn');
-
-    if (rollupBtn) {
-      rollupBtn.addEventListener('click', () => {
-        this.openEditForm(event);
-      });
-    }
-
-    const favoriteBtn = element.querySelector('.event__favorite-btn');
-
-    if (favoriteBtn) {
-      favoriteBtn.addEventListener('click', () => {
-        this.toggleFavorite(event);
-      });
-    }
-  }
-
-  addFormListeners(formView) {
-    const element = formView.getElement();
-    const form = element.querySelector('form');
-
-    if (form) {
-      form.addEventListener('submit', (evt) => {
-        evt.preventDefault();
-        this.handleFormSubmit();
-      });
-
-      const resetBtn = form.querySelector('.event__reset-btn');
-
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          this.handleFormReset(formView);
-        });
-      }
-
-      const rollupBtn = form.querySelector('.event__rollup-btn');
-      if (rollupBtn) {
-        rollupBtn.addEventListener('click', () => {
-          this.closeEditForm(formView);
-        });
-      }
-    }
-  }
-
-  openEditForm(event) {
-    const eventView = this.eventViews.find(
-      (view) => view.event && view.event.id === event.id
-    );
-
-    if (eventView) {
-      const editView = new EventEditView();
-      const editElement = editView.getElement();
-
-      eventView.getElement().replaceWith(editElement);
-
-      const index = this.eventViews.indexOf(eventView);
-      this.eventViews.splice(index, 1, editView);
-
-      this.addFormListeners(editView);
-    }
-  }
-
-  closeEditForm() {
-    this.init();
-  }
-
-  toggleFavorite(event) {
-    const updatedEvent = {
-      ...event,
-      isFavorite: !event.isFavorite
-    };
-
-    this.eventsModel.updateEvent(updatedEvent);
-    this.updateEventInList(updatedEvent);
-  }
-
-  handleFormSubmit() {
-    this.init();
-  }
-
-  handleFormReset(formView) {
-    if (formView.event && formView.event.id) {
-      this.eventsModel.deleteEvent(formView.event.id);
-    }
-    this.init();
-  }
-
-  updateEventInList(updatedEvent) {
-    const eventView = this.eventViews.find(
-      (view) => view.event && view.event.id === updatedEvent.id
-    );
-
-    if (eventView) {
-      const fullEvent = this.eventsModel.getEventById(updatedEvent.id);
-      const newEventView = new EventPointView(
-        fullEvent,
-        fullEvent.destination,
-        fullEvent.offers
-      );
-
-      eventView.getElement().replaceWith(newEventView.getElement());
-      const index = this.eventViews.indexOf(eventView);
-      this.eventViews.splice(index, 1, newEventView);
-      this.addEventListeners(newEventView, fullEvent);
+    const presenter = this.#eventPresenters.get(updatedEvent.id);
+    if (presenter) {
+      presenter.destroy();
+      this.#eventPresenters.delete(updatedEvent.id);
+      this.#renderEvent(updatedEvent);
     }
   }
 }
