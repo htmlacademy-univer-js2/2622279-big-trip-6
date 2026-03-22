@@ -1,118 +1,93 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import { EVENT_TYPES } from '../const.js';
 
-function createFormEditTemplate(event, offers, destination) {
-  const { type, dateFrom, dateTo, basePrice, id } = event;
-  const destinationName = destination ? destination.name : '';
+function createFormEditTemplate(point) {
+  const {
+    type = EVENT_TYPES[0],
+    destination = { name: '', description: '', pictures: [] },
+    dateFrom = new Date(),
+    dateTo = new Date(),
+    basePrice = 0,
+    offers = [],
+    id = null,
+  } = point;
+
   const resetButtonText = id ? 'Delete' : 'Cancel';
 
-
-  const formatDateTime = (date) => {
+  const formatDate = (date) => {
     const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const day = d.getDate();
+    return `${month} ${day}`;
   };
 
-  const formattedStart = formatDateTime(dateFrom);
-  const formattedEnd = formatDateTime(dateTo);
+  const formatTime = (date) => {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
 
+  const dateFormatted = formatDate(dateFrom);
+  const timeFrom = formatTime(dateFrom);
+  const timeTo = formatTime(dateTo);
 
-  const eventTypes = [
-    'taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'
-  ];
-
-  const eventTypesTemplate = eventTypes.map((eventType) => `
+  const eventTypesTemplate = EVENT_TYPES.map((eventType) => `
     <div class="event__type-item">
       <input id="event-type-${eventType}-1"
              class="event__type-input visually-hidden"
              type="radio"
              name="event-type"
              value="${eventType}"
-             ${type === eventType ? 'checked' : ''}>
+             ${eventType === type ? 'checked' : ''}>
       <label class="event__type-label event__type-label--${eventType}"
-             for="event-type-${eventType}-1">${eventType}</label>
-    </div>
-  `).join('');
-
-
-  const offersTemplate = offers.map((offer) => `
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox visually-hidden"
-             id="event-offer-${offer.id}-1"
-             type="checkbox"
-             name="event-offer-${offer.id}"
-             ${event.offers?.includes(offer.id) ? 'checked' : ''}>
-      <label class="event__offer-label" for="event-offer-${offer.id}-1">
-        <span class="event__offer-title">${offer.title}</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">${offer.price}</span>
+             for="event-type-${eventType}-1">
+        ${eventType.charAt(0).toUpperCase() + eventType.slice(1)}
       </label>
     </div>
   `).join('');
 
+  const offersTemplate = offers.length > 0 ? `
+    <section class="event__section event__section--offers">
+      <h3 class="event__section-title event__section-title--offers">Offers</h3>
+      <div class="event__available-offers">
+        ${offers.map((offer) => `
+          <div class="event__offer-selector">
+            <input class="event__offer-checkbox visually-hidden"
+                   id="event-offer-${offer.id}"
+                   type="checkbox"
+                   name="event-offer-${offer.id}"
+                   value="${offer.id}"
+                   checked>
+            <label class="event__offer-label" for="event-offer-${offer.id}">
+              <span class="event__offer-title">${offer.title}</span>
+              &plus;&euro;&nbsp;
+              <span class="event__offer-price">${offer.price}</span>
+            </label>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  ` : '<p class="event__offers-message">No offers available for this event type</p>';
 
-  const destinationsOptions = destination?.pictures?.map((picture) => `
-    <img class="event__photo" src="${picture.src}" alt="${picture.description}">
-  `).join('') || '';
+  const destinationDescriptionTemplate = destination.description ? `
+    <section class="event__section event__section--destination">
+      <h3 class="event__section-title event__section-title--destination">Destination</h3>
+      <p class="event__destination-description">${destination.description}</p>
+      ${destination.pictures?.length > 0 ? `
+        <div class="event__photos-container">
+          <div class="event__photos-tape">
+            ${destination.pictures.map((pic) => `
+              <img class="event__photo" src="${pic.src}" alt="${pic.description}">
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </section>
+  ` : '';
 
-
-  const defaultOffers = `
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox visually-hidden" id="event-offer-luggage-1" type="checkbox" name="event-offer-luggage" checked>
-      <label class="event__offer-label" for="event-offer-luggage-1">
-        <span class="event__offer-title">Add luggage</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">50</span>
-      </label>
-    </div>
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox visually-hidden" id="event-offer-comfort-1" type="checkbox" name="event-offer-comfort" checked>
-      <label class="event__offer-label" for="event-offer-comfort-1">
-        <span class="event__offer-title">Switch to comfort</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">80</span>
-      </label>
-    </div>
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox visually-hidden" id="event-offer-meal-1" type="checkbox" name="event-offer-meal">
-      <label class="event__offer-label" for="event-offer-meal-1">
-        <span class="event__offer-title">Add meal</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">15</span>
-      </label>
-    </div>
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox visually-hidden" id="event-offer-seats-1" type="checkbox" name="event-offer-seats">
-      <label class="event__offer-label" for="event-offer-seats-1">
-        <span class="event__offer-title">Choose seats</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">5</span>
-      </label>
-    </div>
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox visually-hidden" id="event-offer-train-1" type="checkbox" name="event-offer-train">
-      <label class="event__offer-label" for="event-offer-train-1">
-        <span class="event__offer-title">Travel by train</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">40</span>
-      </label>
-    </div>
-  `;
-
-
-  const defaultDestinations = `
-    <img class="event__photo" src="img/photos/1.jpg" alt="Event photo">
-    <img class="event__photo" src="img/photos/2.jpg" alt="Event photo">
-    <img class="event__photo" src="img/photos/3.jpg" alt="Event photo">
-    <img class="event__photo" src="img/photos/4.jpg" alt="Event photo">
-    <img class="event__photo" src="img/photos/5.jpg" alt="Event photo">
-  `;
-
-  return (
-    `<div class="trip-events__item">
+  return `
+    <div class="trip-events__item">
       <form class="event event--edit" action="#" method="post">
         <header class="event__header">
           <div class="event__type-wrapper">
@@ -131,18 +106,21 @@ function createFormEditTemplate(event, offers, destination) {
 
           <div class="event__field-group event__field-group--destination">
             <label class="event__label event__type-output" for="event-destination-1">
-              ${type}
+              ${type.charAt(0).toUpperCase() + type.slice(1)}
             </label>
             <input class="event__input event__input--destination"
                    id="event-destination-1"
                    type="text"
                    name="event-destination"
-                   value="${destinationName}"
-                   list="destination-list-1">
+                   value="${destination.name}"
+                   list="destination-list-1"
+                   required>
             <datalist id="destination-list-1">
               <option value="Amsterdam"></option>
               <option value="Geneva"></option>
               <option value="Chamonix"></option>
+              <option value="Paris"></option>
+              <option value="Rome"></option>
             </datalist>
           </div>
 
@@ -152,14 +130,14 @@ function createFormEditTemplate(event, offers, destination) {
                    id="event-start-time-1"
                    type="text"
                    name="event-start-time"
-                   value="${formattedStart}">
+                   value="${dateFormatted} ${timeFrom}">
             &mdash;
             <label class="visually-hidden" for="event-end-time-1">To</label>
             <input class="event__input event__input--time"
                    id="event-end-time-1"
                    type="text"
                    name="event-end-time"
-                   value="${formattedEnd}">
+                   value="${dateFormatted} ${timeTo}">
           </div>
 
           <div class="event__field-group event__field-group--price">
@@ -169,80 +147,117 @@ function createFormEditTemplate(event, offers, destination) {
             </label>
             <input class="event__input event__input--price"
                    id="event-price-1"
-                   type="text"
+                   type="number"
                    name="event-price"
-                   value="${basePrice}">
+                   value="${basePrice}"
+                   min="0"
+                   required>
           </div>
 
           <button class="event__save-btn btn btn--blue" type="submit">Save</button>
           <button class="event__reset-btn" type="reset">${resetButtonText}</button>
           ${id ? '<button class="event__rollup-btn" type="button"><span class="visually-hidden">Open event</span></button>' : ''}
         </header>
-
         <section class="event__details">
-          <section class="event__section event__section--offers">
-            <h3 class="event__section-title event__section-title--offers">Offers</h3>
-            <div class="event__available-offers">
-              ${offers.length ? offersTemplate : defaultOffers}
-            </div>
-          </section>
-
-          <section class="event__section event__section--destination">
-            <h3 class="event__section-title event__section-title--destination">Destination</h3>
-            <p class="event__destination-description">${destination?.description || 'Chamonix-Mont-Blanc (usually shortened to Chamonix) is a resort area near the junction of France, Switzerland and Italy. At the base of Mont Blanc, the highest summit in the Alps, it\'s renowned for its skiing.'}</p>
-            <div class="event__photos-container">
-              <div class="event__photos-tape">
-                ${destinationsOptions || defaultDestinations}
-              </div>
-            </div>
-          </section>
+          ${offersTemplate}
+          ${destinationDescriptionTemplate}
         </section>
       </form>
-    </div>`
-  );
+    </div>
+  `;
 }
 
 export default class FormEditView extends AbstractView {
-  #event = null;
-  #offers = null;
-  #destination = null;
+  #point = null;
+  #handleFormSubmit = null;
+  #handleResetClick = null;
+  #handleRollupClick = null;
+  #handleTypeChange = null;
 
-  constructor(event, offers, destination, onSubmit, onReset, onRollup) {
+  constructor({ point, onFormSubmit, onResetClick, onRollupClick, onTypeChange }) {
     super();
-    this.#event = event;
-    this.#offers = offers;
-    this.#destination = destination;
+    this.#point = point;
+    this.#handleFormSubmit = onFormSubmit;
+    this.#handleResetClick = onResetClick;
+    this.#handleRollupClick = onRollupClick;
+    this.#handleTypeChange = onTypeChange;
 
     const form = this.element.querySelector('form');
     if (form) {
-      form.addEventListener('submit', (evt) => {
-        evt.preventDefault();
-        onSubmit();
-      });
+      form.addEventListener('submit', this.#formSubmitHandler);
     }
 
     const resetBtn = this.element.querySelector('.event__reset-btn');
     if (resetBtn) {
-      resetBtn.addEventListener('click', (evt) => {
-        evt.preventDefault();
-        onReset();
-      });
+      resetBtn.addEventListener('click', this.#resetClickHandler);
     }
 
     const rollupBtn = this.element.querySelector('.event__rollup-btn');
     if (rollupBtn) {
-      rollupBtn.addEventListener('click', (evt) => {
-        evt.preventDefault();
-        onRollup();
-      });
+      rollupBtn.addEventListener('click', this.#rollupClickHandler);
     }
+
+    const typeInputs = this.element.querySelectorAll('.event__type-input');
+    typeInputs.forEach((input) => {
+      input.addEventListener('change', this.#typeChangeHandler);
+    });
   }
 
   get template() {
-    return createFormEditTemplate(this.#event, this.#offers, this.#destination);
+    return createFormEditTemplate(this.#point);
   }
 
-  getEvent() {
-    return this.#event;
+  getPoint() {
+    return this.#point;
   }
+
+  getFormData() {
+    const form = this.element.querySelector('form');
+    const formData = new FormData(form);
+
+    const type = formData.get('event-type');
+    const destinationName = formData.get('event-destination');
+    const startDateTime = formData.get('event-start-time');
+    const endDateTime = formData.get('event-end-time');
+    const price = parseInt(formData.get('event-price'), 10);
+
+    const selectedOffers = [];
+    this.element.querySelectorAll('.event__offer-checkbox:checked').forEach((checkbox) => {
+      const offerId = checkbox.value;
+      const offer = this.#point.offers?.find((o) => o.id === offerId);
+      if (offer) {
+        selectedOffers.push(offer);
+      }
+    });
+
+    return {
+      type,
+      destinationName,
+      startDateTime,
+      endDateTime,
+      price,
+      offers: selectedOffers
+    };
+  }
+
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    const formData = this.getFormData();
+    this.#handleFormSubmit(formData);
+  };
+
+  #resetClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleResetClick();
+  };
+
+  #rollupClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleRollupClick();
+  };
+
+  #typeChangeHandler = (evt) => {
+    const newType = evt.target.value;
+    this.#handleTypeChange?.(newType);
+  };
 }

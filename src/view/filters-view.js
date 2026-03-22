@@ -23,22 +23,20 @@ function createFiltersTemplate({ filters, selectedFilter }) {
   `;
 }
 
-const FILTERS = [
-  { id: 'everything', name: 'Everything' },
-  { id: 'future', name: 'Future' },
-  { id: 'present', name: 'Present' },
-  { id: 'past', name: 'Past' },
-];
-
 export default class FiltersView extends AbstractView {
+  #filters = null;
   #selectedFilter = null;
 
-  constructor(selectedFilter) {
+  constructor(filters, selectedFilter) {
     super();
+    this.#filters = filters;
     this.#selectedFilter = selectedFilter;
   }
 
   get template() {
-    return createFiltersTemplate({ filters: FILTERS, selectedFilter: this.#selectedFilter });
+    return createFiltersTemplate({
+      filters: this.#filters,
+      selectedFilter: this.#selectedFilter
+    });
   }
 }
