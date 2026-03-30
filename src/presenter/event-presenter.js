@@ -4,18 +4,14 @@ import FormEditView from '../view/form-edit-view.js';
 
 export default class EventPresenter {
   #event;
-  #offersModel;
-  #destinationsModel;
   #eventView;
   #editView;
   #isEditing = false;
   #container;
   #onDataChange;
 
-  constructor(event, offersModel, destinationsModel) {
+  constructor(event) {
     this.#event = event;
-    this.#offersModel = offersModel;
-    this.#destinationsModel = destinationsModel;
   }
 
   init(container, onDataChange) {
@@ -25,25 +21,24 @@ export default class EventPresenter {
   }
 
   #renderEvent() {
-    const offers = this.#offersModel?.getByType(this.#event.type) || [];
-    const destination = this.#destinationsModel?.getById(this.#event.destination) || this.#event.destination;
+    const destination = this.#event.destination || { name: '', description: '', pictures: [] };
+    const offers = this.#event.offers || [];
 
     this.#eventView = new RoutePointView(
       this.#event,
       destination,
-      this.#event.offers,
+      offers,
       () => this.#swapToEdit(),
       () => this.#handleFavorite()
     );
 
-    this.#editView = new FormEditView(
-      this.#event,
-      offers,
-      destination,
-      () => this.#swapToEvent(),
-      () => this.#swapToEvent(),
-      () => this.#swapToEvent()
-    );
+    this.#editView = new FormEditView({
+      point: this.#event,
+      onFormSubmit: (formData) => this.#handleFormSubmit(formData),
+      onResetClick: () => this.#handleReset(),
+      onRollupClick: () => this.#swapToEvent(),
+      onTypeChange: (newType) => this.#handleTypeChange(newType)
+    });
 
     document.addEventListener('keydown', this.#handleKeydown);
     this.#container.append(this.#eventView.element);
@@ -55,6 +50,54 @@ export default class EventPresenter {
       isFavorite: !this.#event.isFavorite
     };
     this.#onDataChange?.(updatedEvent);
+  }
+
+  #handleFormSubmit(formData) {
+    const destination = {
+      name: formData.destinationName,
+      description: this.#event.destination?.description || '',
+      pictures: this.#event.destination?.pictures || []
+    };
+
+    const updatedEvent = {
+      ...this.#event,
+      type: formData.type,
+      destination: destination,
+      dateFrom: new Date(formData.startDateTime),
+      dateTo: new Date(formData.endDateTime),
+      basePrice: formData.price,
+      offers: formData.offers
+    };
+
+    this.#onDataChange?.(updatedEvent);
+    this.#swapToEvent();
+  }
+
+  #handleReset() {
+    if (this.#event.id) {
+      this.#onDataChange?.(null, this.#event.id);
+    }
+    this.#swapToEvent();
+  }
+
+  #handleTypeChange(newType) {
+    const updatedEvent = {
+      ...this.#event,
+      type: newType,
+      offers: []
+    };
+    this.#event = updatedEvent;
+
+    const newEditView = new FormEditView({
+      point: this.#event,
+      onFormSubmit: (formData) => this.#handleFormSubmit(formData),
+      onResetClick: () => this.#handleReset(),
+      onRollupClick: () => this.#swapToEvent(),
+      onTypeChange: (type) => this.#handleTypeChange(type)
+    });
+
+    replace(newEditView, this.#editView);
+    this.#editView = newEditView;
   }
 
   #swapToEdit() {
@@ -81,8 +124,16 @@ export default class EventPresenter {
   };
 
   destroy() {
-    this.#eventView?.removeElement();
-    this.#editView?.removeElement();
+    if (this.#eventView) {
+      this.#eventView.removeElement();
+    }
+    if (this.#editView) {
+      this.#editView.removeElement();
+    }
     document.removeEventListener('keydown', this.#handleKeydown);
+  }
+
+  getEvent() {
+    return this.#event;
   }
 }
