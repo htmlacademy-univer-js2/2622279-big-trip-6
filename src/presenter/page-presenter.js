@@ -109,8 +109,7 @@ export default class PagePresenter {
 
     const filterInputs = this.#filtersComponent.element.querySelectorAll('.trip-filters__filter-input');
     filterInputs.forEach((input) => {
-      input.addEventListener('change', () => {
-      });
+      input.addEventListener('change', () => {});
     });
   }
 
@@ -141,44 +140,61 @@ export default class PagePresenter {
   }
 
   #renderEvent(event) {
-    const eventPresenter = new EventPresenter(event);
-
-    eventPresenter.init(this.#eventsContainer, (updatedEvent, deletedId) => {
-      if (deletedId) {
-        this.#handleEventDelete(deletedId);
-      } else if (updatedEvent) {
-        this.#handleEventChange(updatedEvent);
-      }
+    const eventPresenter = new EventPresenter({
+      event: event,
+      onDataChange: (updatedEvent, deletedId) => {
+        if (deletedId) {
+          this.#handleEventDelete(deletedId);
+        } else if (updatedEvent) {
+          this.#handleEventChange(updatedEvent);
+        }
+      },
+      onModeChange: () => this.#resetAllEventViews()
     });
 
+    eventPresenter.init(this.#eventsContainer);
     this.#eventPresenters.set(event.id, eventPresenter);
+  }
+
+  #resetAllEventViews() {
+    this.#eventPresenters.forEach((presenter) => presenter.resetView());
   }
 
   #handleEventChange(updatedEvent) {
     this.#eventsModel.updateEvent(updatedEvent);
-    this.#refresh();
+
+    const presenter = this.#eventPresenters.get(updatedEvent.id);
+    if (presenter) {
+      presenter.updateElement(updatedEvent);
+    }
+
+    this.#refreshInfoAndFilters();
   }
 
   #handleEventDelete(deletedId) {
     this.#eventsModel.deleteEvent(deletedId);
-    this.#refresh();
+
+    const presenter = this.#eventPresenters.get(deletedId);
+    if (presenter) {
+      presenter.destroy();
+      this.#eventPresenters.delete(deletedId);
+    }
+
+    this.#refreshInfoAndFilters();
+
+    const events = this.#eventsModel.getAllFullEvents();
+    if (events.length === 0) {
+      if (this.#sortingComponent) {
+        remove(this.#sortingComponent);
+        this.#sortingComponent = null;
+      }
+      this.#renderNoPoints();
+    }
   }
 
-  #refresh() {
-    this.#eventPresenters.forEach((presenter) => presenter.destroy());
-    this.#eventPresenters.clear();
-
-    if (this.#sortingComponent) {
-      remove(this.#sortingComponent);
-      this.#sortingComponent = null;
-    }
-
-    if (this.#noPointsComponent) {
-      remove(this.#noPointsComponent);
-      this.#noPointsComponent = null;
-    }
-
+  #refreshInfoAndFilters() {
     this.#renderInfo();
+
     const events = this.#eventsModel.getAllFullEvents();
     const filters = this.#filterModel.updateFilters(events);
 
@@ -191,16 +207,7 @@ export default class PagePresenter {
 
     const filterInputs = this.#filtersComponent.element.querySelectorAll('.trip-filters__filter-input');
     filterInputs.forEach((input) => {
-      input.addEventListener('change', () => {
-      });
+      input.addEventListener('change', () => {});
     });
-
-    if (events.length === 0) {
-      this.#renderNoPoints();
-      return;
-    }
-
-    this.#renderSorting();
-    this.#renderEvents(events);
   }
 }

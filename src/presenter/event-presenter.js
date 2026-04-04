@@ -3,20 +3,22 @@ import RoutePointView from '../view/route-point-view.js';
 import FormEditView from '../view/form-edit-view.js';
 
 export default class EventPresenter {
-  #event;
-  #eventView;
-  #editView;
+  #event = null;
+  #eventView = null;
+  #editView = null;
   #isEditing = false;
-  #container;
-  #onDataChange;
+  #container = null;
+  #onDataChange = null;
+  #onModeChange = null;
 
-  constructor(event) {
+  constructor({ event, onDataChange, onModeChange }) {
     this.#event = event;
+    this.#onDataChange = onDataChange;
+    this.#onModeChange = onModeChange;
   }
 
-  init(container, onDataChange) {
+  init(container) {
     this.#container = container;
-    this.#onDataChange = onDataChange;
     this.#renderEvent();
   }
 
@@ -24,17 +26,17 @@ export default class EventPresenter {
     const destination = this.#event.destination || { name: '', description: '', pictures: [] };
     const offers = this.#event.offers || [];
 
-    this.#eventView = new RoutePointView(
-      this.#event,
-      destination,
-      offers,
-      () => this.#swapToEdit(),
-      () => this.#handleFavorite()
-    );
+    this.#eventView = new RoutePointView({
+      event: this.#event,
+      destination: destination,
+      offers: offers,
+      onRollupClick: () => this.#swapToEdit(),
+      onFavoriteClick: () => this.#handleFavorite()
+    });
 
     this.#editView = new FormEditView({
       point: this.#event,
-      onFormSubmit: (formData) => this.#handleFormSubmit(formData),
+      onFormSubmit: () => this.#handleFormSubmit(),
       onResetClick: () => this.#handleReset(),
       onRollupClick: () => this.#swapToEvent(),
       onTypeChange: (newType) => this.#handleTypeChange(newType)
@@ -49,34 +51,16 @@ export default class EventPresenter {
       ...this.#event,
       isFavorite: !this.#event.isFavorite
     };
-    this.#onDataChange?.(updatedEvent);
+    this.#onDataChange(updatedEvent);
   }
 
-  #handleFormSubmit(formData) {
-    const destination = {
-      name: formData.destinationName,
-      description: this.#event.destination?.description || '',
-      pictures: this.#event.destination?.pictures || []
-    };
-
-    const updatedEvent = {
-      ...this.#event,
-      type: formData.type,
-      destination: destination,
-      dateFrom: new Date(formData.startDateTime),
-      dateTo: new Date(formData.endDateTime),
-      basePrice: formData.price,
-      offers: formData.offers
-    };
-
-    this.#onDataChange?.(updatedEvent);
+  #handleFormSubmit() {
+    // Пока просто закрываем форму
     this.#swapToEvent();
   }
 
   #handleReset() {
-    if (this.#event.id) {
-      this.#onDataChange?.(null, this.#event.id);
-    }
+    // Пока просто закрываем форму
     this.#swapToEvent();
   }
 
@@ -90,7 +74,7 @@ export default class EventPresenter {
 
     const newEditView = new FormEditView({
       point: this.#event,
-      onFormSubmit: (formData) => this.#handleFormSubmit(formData),
+      onFormSubmit: () => this.#handleFormSubmit(),
       onResetClick: () => this.#handleReset(),
       onRollupClick: () => this.#swapToEvent(),
       onTypeChange: (type) => this.#handleTypeChange(type)
@@ -104,6 +88,7 @@ export default class EventPresenter {
     if (this.#isEditing) {
       return;
     }
+    this.#onModeChange();
     replace(this.#editView, this.#eventView);
     this.#isEditing = true;
   }
@@ -123,6 +108,12 @@ export default class EventPresenter {
     }
   };
 
+  resetView() {
+    if (this.#isEditing) {
+      this.#swapToEvent();
+    }
+  }
+
   destroy() {
     if (this.#eventView) {
       this.#eventView.removeElement();
@@ -131,6 +122,24 @@ export default class EventPresenter {
       this.#editView.removeElement();
     }
     document.removeEventListener('keydown', this.#handleKeydown);
+  }
+
+  updateElement(newEvent) {
+    this.#event = newEvent;
+
+    const destination = this.#event.destination || { name: '', description: '', pictures: [] };
+    const offers = this.#event.offers || [];
+
+    const newEventView = new RoutePointView({
+      event: this.#event,
+      destination: destination,
+      offers: offers,
+      onRollupClick: () => this.#swapToEdit(),
+      onFavoriteClick: () => this.#handleFavorite()
+    });
+
+    replace(newEventView, this.#eventView);
+    this.#eventView = newEventView;
   }
 
   getEvent() {

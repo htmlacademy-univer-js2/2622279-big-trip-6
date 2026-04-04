@@ -1,27 +1,41 @@
-import dayjs from 'dayjs';
 import AbstractView from '../framework/view/abstract-view.js';
 
 function createPointTemplate(event, destination, offers) {
   const { type, dateFrom, dateTo, basePrice, isFavorite } = event;
   const destinationName = destination ? destination.name : '';
 
-  const dateISO = dayjs(dateFrom).format('YYYY-MM-DD');
-  const dateShort = dayjs(dateFrom).format('MMM DD');
-  const startTime = dayjs(dateFrom).format('HH:mm');
-  const endTime = dayjs(dateTo).format('HH:mm');
-  const duration = dayjs(dateTo).diff(dayjs(dateFrom), 'minute');
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const day = d.getDate();
+    return `${month} ${day}`;
+  };
 
+  const formatTime = (date) => {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const formattedDate = formatDate(dateFrom);
+  const timeFrom = formatTime(dateFrom);
+  const timeTo = formatTime(dateTo);
+
+  const duration = new Date(dateTo) - new Date(dateFrom);
+  const diffMins = Math.floor(duration / 60000);
   let durationFormatted = '';
-  if (duration < 60) {
-    durationFormatted = `${duration}M`;
-  } else if (duration < 1440) {
-    const hours = Math.floor(duration / 60);
-    const mins = duration % 60;
+
+  if (diffMins < 60) {
+    durationFormatted = `${diffMins}M`;
+  } else if (diffMins < 1440) {
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
     durationFormatted = `${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
   } else {
-    const days = Math.floor(duration / 1440);
-    const hours = Math.floor((duration % 1440) / 60);
-    const mins = duration % 60;
+    const days = Math.floor(diffMins / 1440);
+    const hours = Math.floor((diffMins % 1440) / 60);
+    const mins = diffMins % 60;
     durationFormatted = `${days.toString().padStart(2, '0')}D ${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
   }
 
@@ -35,19 +49,19 @@ function createPointTemplate(event, destination, offers) {
     </li>
   `).join('');
 
-  return (
-    `<div class="trip-events__item">
+  return `
+    <div class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${dateISO}">${dateShort}</time>
+        <time class="event__date" datetime="${dateFrom}">${formattedDate}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
         <h3 class="event__title">${eventTitle}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${dayjs(dateFrom).toISOString()}">${startTime}</time>
+            <time class="event__start-time" datetime="${dateFrom}">${timeFrom}</time>
             &mdash;
-            <time class="event__end-time" datetime="${dayjs(dateTo).toISOString()}">${endTime}</time>
+            <time class="event__end-time" datetime="${dateTo}">${timeTo}</time>
           </p>
           <p class="event__duration">${durationFormatted}</p>
         </div>
@@ -68,23 +82,29 @@ function createPointTemplate(event, destination, offers) {
           <span class="visually-hidden">Open event</span>
         </button>
       </div>
-    </div>`
-  );
+    </div>
+  `;
 }
 
 export default class RoutePointView extends AbstractView {
   #event = null;
   #destination = null;
   #offers = null;
+  #onRollupClick = null;
+  #onFavoriteClick = null;
 
-  constructor(event, destination, offers, onRollup, onFavorite) {
+  constructor({ event, destination, offers, onRollupClick, onFavoriteClick }) {
     super();
     this.#event = event;
     this.#destination = destination;
     this.#offers = offers;
+    this.#onRollupClick = onRollupClick;
+    this.#onFavoriteClick = onFavoriteClick;
 
-    this.element.querySelector('.event__rollup-btn').addEventListener('click', onRollup);
-    this.element.querySelector('.event__favorite-btn').addEventListener('click', onFavorite);
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#rollupClickHandler);
+    this.element.querySelector('.event__favorite-btn')
+      .addEventListener('click', this.#favoriteClickHandler);
   }
 
   get template() {
@@ -94,4 +114,14 @@ export default class RoutePointView extends AbstractView {
   getEvent() {
     return this.#event;
   }
+
+  #rollupClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#onRollupClick();
+  };
+
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#onFavoriteClick();
+  };
 }
