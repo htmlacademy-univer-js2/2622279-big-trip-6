@@ -182,23 +182,15 @@ export default class FormEditView extends AbstractView {
     this.#handleRollupClick = onRollupClick;
     this.#handleTypeChange = onTypeChange;
 
-    const form = this.element.querySelector('form');
-    if (form) {
-      form.addEventListener('submit', this.#formSubmitHandler);
-    }
-
-    const resetBtn = this.element.querySelector('.event__reset-btn');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', this.#resetClickHandler);
-    }
+    this.element.querySelector('form').addEventListener('submit', this.#formSubmitHandler);
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#resetClickHandler);
 
     const rollupBtn = this.element.querySelector('.event__rollup-btn');
     if (rollupBtn) {
       rollupBtn.addEventListener('click', this.#rollupClickHandler);
     }
 
-    const typeInputs = this.element.querySelectorAll('.event__type-input');
-    typeInputs.forEach((input) => {
+    this.element.querySelectorAll('.event__type-input').forEach((input) => {
       input.addEventListener('change', this.#typeChangeHandler);
     });
   }
