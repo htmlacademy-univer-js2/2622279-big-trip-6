@@ -32,4 +32,16 @@ const OFFER_TITLES = {
   restaurant: ['Reservation', 'VIP zone', 'Sommelier', 'Chef\'s table']
 };
 
-export{EVENT_TYPES, CITIES, DESTINATION_DESCRIPTIONS, OFFER_TITLES};
+const SORT_TYPE = {
+  DAY: 'day',
+  TIME: 'time',
+  PRICE: 'price'
+};
+
+export {
+  EVENT_TYPES,
+  CITIES,
+  DESTINATION_DESCRIPTIONS,
+  OFFER_TITLES,
+  SORT_TYPE
+};
