@@ -6,12 +6,16 @@ import NoPointsView from '../view/no-points-view.js';
 import FilterModel from '../model/filter-model.js';
 import EventPresenter from './event-presenter.js';
 import { SORT_TYPE } from '../const.js';
+import { destinationsMock } from '../mock/destinations-mock.js';
+import { offersMock } from '../mock/offers-mock.js';
 
 export default class PagePresenter {
   #filtersContainer = null;
   #eventsContainer = null;
   #eventsModel = null;
   #filterModel = null;
+  #allDestinations = destinationsMock;
+  #allOffers = offersMock;
 
   #filtersComponent = null;
   #sortingComponent = null;
@@ -204,7 +208,7 @@ export default class PagePresenter {
 
   #renderEvent(event) {
     const eventPresenter = new EventPresenter({
-      event: event,
+      container: this.#eventsContainer,
       onDataChange: (updatedEvent, deletedId) => {
         if (deletedId) {
           this.#handleEventDelete(deletedId);
@@ -212,10 +216,11 @@ export default class PagePresenter {
           this.#handleEventChange(updatedEvent);
         }
       },
-      onModeChange: () => this.#resetAllEventViews()
+      onModeChange: () => this.#resetAllEventViews(),
+      allDestinations: this.#allDestinations
     });
 
-    eventPresenter.init(this.#eventsContainer);
+    eventPresenter.init(event);
     this.#eventPresenters.set(event.id, eventPresenter);
   }
 
@@ -228,10 +233,11 @@ export default class PagePresenter {
 
     const presenter = this.#eventPresenters.get(updatedEvent.id);
     if (presenter) {
-      presenter.updateElement(updatedEvent);
+      presenter.init(updatedEvent);
     }
 
-    this.#fullRefresh();
+    this.#refreshInfoOnly();
+    this.#refreshFiltersOnly();
   }
 
   #handleEventDelete(deletedId) {
@@ -253,15 +259,8 @@ export default class PagePresenter {
       this.#refreshInfoOnly();
       this.#refreshFiltersOnly();
     } else {
-      this.#fullRefresh();
-    }
-  }
-
-  #fullRefresh() {
-    this.#refreshInfoOnly();
-    this.#refreshFiltersOnly();
-
-    if (this.#sortingComponent) {
+      this.#refreshInfoOnly();
+      this.#refreshFiltersOnly();
       this.#renderSortedEvents();
     }
   }

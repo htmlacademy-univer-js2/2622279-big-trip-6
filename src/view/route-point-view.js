@@ -1,7 +1,11 @@
 import AbstractView from '../framework/view/abstract-view.js';
 
-function createPointTemplate(event, destination, offers) {
-  const { type, dateFrom, dateTo, basePrice, isFavorite } = event;
+function createPointTemplate(point, destination, offers) {
+  if (!point) {
+    return '';
+  }
+
+  const { type, dateFrom, dateTo, basePrice, isFavorite } = point;
   const destinationName = destination ? destination.name : '';
 
   const formatDate = (date) => {
@@ -42,12 +46,12 @@ function createPointTemplate(event, destination, offers) {
   const favoriteClass = isFavorite ? 'event__favorite-btn--active' : '';
   const eventTitle = destinationName ? `${type} to ${destinationName}` : type;
 
-  const offersTemplate = offers.slice(0, 3).map((offer) => `
+  const offersTemplate = offers && offers.length > 0 ? offers.slice(0, 3).map((offer) => `
     <li class="event__offer">
       <span class="event__offer-title">${offer.title}</span>
       +€&nbsp;<span class="event__offer-price">${offer.price}</span>
     </li>
-  `).join('');
+  `).join('') : '';
 
   return `
     <div class="trip-events__item">
@@ -87,32 +91,33 @@ function createPointTemplate(event, destination, offers) {
 }
 
 export default class RoutePointView extends AbstractView {
-  #event = null;
+  #point = null;
   #destination = null;
   #offers = null;
   #onRollupClick = null;
   #onFavoriteClick = null;
 
-  constructor({ event, destination, offers, onRollupClick, onFavoriteClick }) {
+  constructor({ point, destination, offers, onRollupClick, onFavoriteClick }) {
     super();
-    this.#event = event;
+    this.#point = point;
     this.#destination = destination;
     this.#offers = offers;
     this.#onRollupClick = onRollupClick;
     this.#onFavoriteClick = onFavoriteClick;
 
-    this.element.querySelector('.event__rollup-btn')
-      .addEventListener('click', this.#rollupClickHandler);
-    this.element.querySelector('.event__favorite-btn')
-      .addEventListener('click', this.#favoriteClickHandler);
+    const rollupBtn = this.element.querySelector('.event__rollup-btn');
+    if (rollupBtn) {
+      rollupBtn.addEventListener('click', this.#rollupClickHandler);
+    }
+
+    const favoriteBtn = this.element.querySelector('.event__favorite-btn');
+    if (favoriteBtn) {
+      favoriteBtn.addEventListener('click', this.#favoriteClickHandler);
+    }
   }
 
   get template() {
-    return createPointTemplate(this.#event, this.#destination, this.#offers);
-  }
-
-  getEvent() {
-    return this.#event;
+    return createPointTemplate(this.#point, this.#destination, this.#offers);
   }
 
   #rollupClickHandler = (evt) => {

@@ -68,7 +68,7 @@ function generateEventPoint(id) {
   };
 }
 
-const EVENT_POINTS_COUNT = 10;
+const EVENT_POINTS_COUNT = 20;
 const mockEventPoints = Array.from({ length: EVENT_POINTS_COUNT }, (_, i) =>
   generateEventPoint(i + 1)
 );
