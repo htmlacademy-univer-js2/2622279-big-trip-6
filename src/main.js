@@ -6,12 +6,11 @@ const eventsContainer = document.querySelector('.trip-events');
 
 if (filtersContainer && eventsContainer) {
   const eventsModel = new EventsModel();
+
   const presenter = new PagePresenter({
     filtersContainer: filtersContainer,
     eventsContainer: eventsContainer,
-    eventsModel: eventsModel,
-    offersModel: null,
-    destinationsModel: null
+    eventsModel: eventsModel
   });
 
   presenter.init();
