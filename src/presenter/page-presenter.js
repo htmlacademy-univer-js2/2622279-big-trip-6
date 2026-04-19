@@ -81,10 +81,6 @@ export default class PagePresenter {
     const startDate = new Date(firstEvent.dateFrom);
     const endDate = new Date(lastEvent.dateTo);
 
-    const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-    const dateString = `${formatDate(startDate)}&nbsp;&mdash;&nbsp;${formatDate(endDate)}`;
-
     const totalCost = events.reduce((sum, event) => {
       let eventCost = event.basePrice;
       if (event.offers && event.offers.length) {
@@ -95,7 +91,7 @@ export default class PagePresenter {
       return sum + eventCost;
     }, 0);
 
-    this.#infoComponent = new InfoView(title, dateString, totalCost);
+    this.#infoComponent = new InfoView(title, startDate, endDate, totalCost);
     const tripMain = document.querySelector('.trip-main');
     if (tripMain) {
       const tripControls = tripMain.querySelector('.trip-main__trip-controls');
@@ -300,10 +296,6 @@ export default class PagePresenter {
     const startDate = new Date(firstEvent.dateFrom);
     const endDate = new Date(lastEvent.dateTo);
 
-    const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-    const dateString = `${formatDate(startDate)}&nbsp;&mdash;&nbsp;${formatDate(endDate)}`;
-
     const totalCost = events.reduce((sum, event) => {
       let eventCost = event.basePrice;
       if (event.offers && event.offers.length) {
@@ -314,7 +306,7 @@ export default class PagePresenter {
       return sum + eventCost;
     }, 0);
 
-    this.#infoComponent = new InfoView(title, dateString, totalCost);
+    this.#infoComponent = new InfoView(title, startDate, endDate, totalCost);
     const tripMain = document.querySelector('.trip-main');
     if (tripMain) {
       const tripControls = tripMain.querySelector('.trip-main__trip-controls');
