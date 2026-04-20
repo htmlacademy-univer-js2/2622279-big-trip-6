@@ -1,4 +1,8 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration.js';
+
+dayjs.extend(duration);
 
 function createPointTemplate(point, destination, offers) {
   if (!point) {
@@ -8,38 +12,25 @@ function createPointTemplate(point, destination, offers) {
   const { type, dateFrom, dateTo, basePrice, isFavorite } = point;
   const destinationName = destination ? destination.name : '';
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-    const day = d.getDate();
-    return `${month} ${day}`;
-  };
+  const formattedDate = dayjs(dateFrom).format('MMM DD');
+  const timeFrom = dayjs(dateFrom).format('HH:mm');
+  const timeTo = dayjs(dateTo).format('HH:mm');
 
-  const formatTime = (date) => {
-    const d = new Date(date);
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
+  const start = dayjs(dateFrom);
+  const end = dayjs(dateTo);
+  const diffMinutes = end.diff(start, 'minute');
 
-  const formattedDate = formatDate(dateFrom);
-  const timeFrom = formatTime(dateFrom);
-  const timeTo = formatTime(dateTo);
-
-  const duration = new Date(dateTo) - new Date(dateFrom);
-  const diffMins = Math.floor(duration / 60000);
   let durationFormatted = '';
-
-  if (diffMins < 60) {
-    durationFormatted = `${diffMins}M`;
-  } else if (diffMins < 1440) {
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
+  if (diffMinutes < 60) {
+    durationFormatted = `${diffMinutes}M`;
+  } else if (diffMinutes < 1440) {
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
     durationFormatted = `${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
   } else {
-    const days = Math.floor(diffMins / 1440);
-    const hours = Math.floor((diffMins % 1440) / 60);
-    const mins = diffMins % 60;
+    const days = Math.floor(diffMinutes / 1440);
+    const hours = Math.floor((diffMinutes % 1440) / 60);
+    const mins = diffMinutes % 60;
     durationFormatted = `${days.toString().padStart(2, '0')}D ${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
   }
 
@@ -56,16 +47,16 @@ function createPointTemplate(point, destination, offers) {
   return `
     <div class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${dateFrom}">${formattedDate}</time>
+        <time class="event__date" datetime="${dayjs(dateFrom).format('YYYY-MM-DD')}">${formattedDate}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
         <h3 class="event__title">${eventTitle}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${dateFrom}">${timeFrom}</time>
+            <time class="event__start-time" datetime="${dayjs(dateFrom).toISOString()}">${timeFrom}</time>
             &mdash;
-            <time class="event__end-time" datetime="${dateTo}">${timeTo}</time>
+            <time class="event__end-time" datetime="${dayjs(dateTo).toISOString()}">${timeTo}</time>
           </p>
           <p class="event__duration">${durationFormatted}</p>
         </div>

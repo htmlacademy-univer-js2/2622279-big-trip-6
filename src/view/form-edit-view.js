@@ -1,25 +1,69 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import { EVENT_TYPES } from '../const.js';
+import dayjs from 'dayjs';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 
 function generateOffersForType(type) {
-  const defaultOffers = {
-    taxi: ['Baby seat', 'Pet transportation', 'Wait driver', 'Air conditioning'],
-    bus: ['Wi-Fi', 'USB charger', 'Extra luggage', 'Refreshments'],
-    train: ['Meal', 'Bedding', 'Business class', 'First class'],
-    ship: ['Cabin with window', 'All inclusive', 'Breakfast', 'Sun deck access'],
-    drive: ['Car with conditioner', 'GPS navigation', 'Child seat', 'Full insurance'],
-    flight: ['Add luggage', 'Business class', 'Preference meal', 'Insurance', 'Seat selection'],
-    'check-in': ['Late checkout', 'Breakfast', 'Early check-in', 'Room with a view'],
-    sightseeing: ['Guide', 'Audio guide', 'Skip the line', 'Transport included'],
-    restaurant: ['Reservation', 'VIP zone', 'Sommelier', 'Chef\'s table']
+  const offersData = {
+    taxi: [
+      { id: 'taxi-1', title: 'Baby seat', price: 15 },
+      { id: 'taxi-2', title: 'Pet transportation', price: 25 },
+      { id: 'taxi-3', title: 'Wait driver', price: 20 },
+      { id: 'taxi-4', title: 'Air conditioning', price: 10 }
+    ],
+    bus: [
+      { id: 'bus-1', title: 'Wi-Fi', price: 5 },
+      { id: 'bus-2', title: 'USB charger', price: 8 },
+      { id: 'bus-3', title: 'Extra luggage', price: 15 },
+      { id: 'bus-4', title: 'Refreshments', price: 12 }
+    ],
+    train: [
+      { id: 'train-1', title: 'Meal', price: 20 },
+      { id: 'train-2', title: 'Bedding', price: 15 },
+      { id: 'train-3', title: 'Business class', price: 50 },
+      { id: 'train-4', title: 'First class', price: 80 }
+    ],
+    ship: [
+      { id: 'ship-1', title: 'Cabin with window', price: 40 },
+      { id: 'ship-2', title: 'All inclusive', price: 100 },
+      { id: 'ship-3', title: 'Breakfast', price: 25 },
+      { id: 'ship-4', title: 'Sun deck access', price: 30 }
+    ],
+    drive: [
+      { id: 'drive-1', title: 'Car with conditioner', price: 20 },
+      { id: 'drive-2', title: 'GPS navigation', price: 15 },
+      { id: 'drive-3', title: 'Child seat', price: 12 },
+      { id: 'drive-4', title: 'Full insurance', price: 35 }
+    ],
+    flight: [
+      { id: 'flight-1', title: 'Add luggage', price: 30 },
+      { id: 'flight-2', title: 'Business class', price: 150 },
+      { id: 'flight-3', title: 'Preference meal', price: 25 },
+      { id: 'flight-4', title: 'Insurance', price: 20 },
+      { id: 'flight-5', title: 'Seat selection', price: 15 }
+    ],
+    'check-in': [
+      { id: 'check-in-1', title: 'Late checkout', price: 30 },
+      { id: 'check-in-2', title: 'Breakfast', price: 20 },
+      { id: 'check-in-3', title: 'Early check-in', price: 25 },
+      { id: 'check-in-4', title: 'Room with a view', price: 40 }
+    ],
+    sightseeing: [
+      { id: 'sightseeing-1', title: 'Guide', price: 25 },
+      { id: 'sightseeing-2', title: 'Audio guide', price: 10 },
+      { id: 'sightseeing-3', title: 'Skip the line', price: 15 },
+      { id: 'sightseeing-4', title: 'Transport included', price: 20 }
+    ],
+    restaurant: [
+      { id: 'restaurant-1', title: 'Reservation', price: 15 },
+      { id: 'restaurant-2', title: 'VIP zone', price: 50 },
+      { id: 'restaurant-3', title: 'Sommelier', price: 30 },
+      { id: 'restaurant-4', title: 'Chef\'s table', price: 70 }
+    ]
   };
 
-  const titles = defaultOffers[type] || ['Standard offer'];
-  return titles.map((title, index) => ({
-    id: `${type}-${index + 1}`,
-    title: title,
-    price: Math.floor(Math.random() * 100) + 10
-  }));
+  return offersData[type] || [];
 }
 
 function createFormEditTemplate(state, allDestinations) {
@@ -43,18 +87,8 @@ function createFormEditTemplate(state, allDestinations) {
 
   const resetButtonText = id ? 'Delete' : 'Cancel';
 
-  const formatDateTime = (date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
-  };
-
-  const dateTimeFrom = formatDateTime(dateFrom);
-  const dateTimeTo = formatDateTime(dateTo);
+  const dateTimeFrom = dayjs(dateFrom).format('YYYY-MM-DD HH:mm');
+  const dateTimeTo = dayjs(dateTo).format('YYYY-MM-DD HH:mm');
 
   const eventTypesTemplate = EVENT_TYPES.map((eventType) => `
     <div class="event__type-item">
@@ -90,7 +124,7 @@ function createFormEditTemplate(state, allDestinations) {
                    name="event-offer-${offer.id}"
                    value="${offer.id}"
                    data-offer-id="${offer.id}"
-                   checked>
+                   ${offers.some((o) => o.id === offer.id) ? 'checked' : ''}>
             <label class="event__offer-label" for="event-offer-${offer.id}">
               <span class="event__offer-title">${offer.title}</span>
               &plus;&euro;&nbsp;
@@ -159,17 +193,19 @@ function createFormEditTemplate(state, allDestinations) {
             <label class="visually-hidden" for="event-start-time-1">From</label>
             <input class="event__input event__input--time"
                    id="event-start-time-1"
-                   type="datetime-local"
+                   type="text"
                    name="event-start-time"
                    value="${dateTimeFrom}"
+                   autocomplete="off"
                    required>
             &mdash;
             <label class="visually-hidden" for="event-end-time-1">To</label>
             <input class="event__input event__input--time"
                    id="event-end-time-1"
-                   type="datetime-local"
+                   type="text"
                    name="event-end-time"
                    value="${dateTimeTo}"
+                   autocomplete="off"
                    required>
           </div>
 
@@ -184,6 +220,7 @@ function createFormEditTemplate(state, allDestinations) {
                    name="event-price"
                    value="${basePrice}"
                    min="0"
+                   autocomplete="off"
                    required>
           </div>
 
@@ -205,6 +242,8 @@ export default class FormEditView extends AbstractStatefulView {
   #handleResetClick = null;
   #handleRollupClick = null;
   #allDestinations = [];
+  #datepickerStart = null;
+  #datepickerEnd = null;
 
   constructor({ point, allDestinations, onFormSubmit, onResetClick, onRollupClick }) {
     super();
@@ -259,7 +298,74 @@ export default class FormEditView extends AbstractStatefulView {
     if (destinationInput) {
       destinationInput.addEventListener('change', this.#destinationChangeHandler);
     }
+
+    this.#destroyDatepickers();
+    this.#initDatepickers();
   }
+
+  #destroyDatepickers() {
+    if (this.#datepickerStart) {
+      this.#datepickerStart.destroy();
+      this.#datepickerStart = null;
+    }
+    if (this.#datepickerEnd) {
+      this.#datepickerEnd.destroy();
+      this.#datepickerEnd = null;
+    }
+  }
+
+  #initDatepickers() {
+    const startDateInput = this.element.querySelector('input[name="event-start-time"]');
+    const endDateInput = this.element.querySelector('input[name="event-end-time"]');
+
+    if (startDateInput) {
+      this.#datepickerStart = flatpickr(startDateInput, {
+        enableTime: true,
+        dateFormat: 'Y-m-d H:i',
+        'time_24hr': true,
+        defaultDate: dayjs(this._state.dateFrom).toDate(),
+        onChange: this.#onDateFromChange,
+        locale: {
+          firstDayOfWeek: 1
+        }
+      });
+    }
+
+    if (endDateInput) {
+      this.#datepickerEnd = flatpickr(endDateInput, {
+        enableTime: true,
+        dateFormat: 'Y-m-d H:i',
+        'time_24hr': true,
+        defaultDate: dayjs(this._state.dateTo).toDate(),
+        onChange: this.#onDateToChange,
+        minDate: dayjs(this._state.dateFrom).toDate(),
+        locale: {
+          firstDayOfWeek: 1
+        }
+      });
+    }
+  }
+
+  #onDateFromChange = ([userDate]) => {
+    const newState = {
+      ...this._state,
+      dateFrom: userDate
+    };
+
+    if (this.#datepickerEnd && userDate) {
+      this.#datepickerEnd.set('minDate', userDate);
+    }
+
+    this.updateElement(newState);
+  };
+
+  #onDateToChange = ([userDate]) => {
+    const newState = {
+      ...this._state,
+      dateTo: userDate
+    };
+    this.updateElement(newState);
+  };
 
   #typeChangeHandler = (evt) => {
     const newType = evt.target.value;
@@ -279,7 +385,15 @@ export default class FormEditView extends AbstractStatefulView {
     if (selectedDestination) {
       const newState = {
         ...this._state,
-        destinationId: selectedDestination.id
+        destinationId: selectedDestination.id,
+        destination: selectedDestination
+      };
+      this.updateElement(newState);
+    } else if (destinationName === '') {
+      const newState = {
+        ...this._state,
+        destinationId: null,
+        destination: { name: '', description: '', pictures: [] }
       };
       this.updateElement(newState);
     }
@@ -287,12 +401,32 @@ export default class FormEditView extends AbstractStatefulView {
 
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
-    const destination = this.#allDestinations.find((d) => d.id === this._state.destinationId);
+
+    let destination = null;
+    if (this._state.destinationId) {
+      destination = this.#allDestinations.find((d) => d.id === this._state.destinationId);
+    }
+
+    if (!destination && this._state.destination) {
+      destination = this.#allDestinations.find((d) => d.name === this._state.destination.name);
+    }
+
+    if (!destination) {
+      const destinationName = this.element.querySelector('.event__input--destination')?.value || '';
+      destination = {
+        id: null,
+        name: destinationName,
+        description: '',
+        pictures: []
+      };
+    }
+
     const submitState = {
       ...this._state,
-      destination: destination || { name: '', description: '', pictures: [] }
+      destination: destination
     };
     delete submitState.destinationId;
+
     this.#handleFormSubmit(submitState);
   };
 
