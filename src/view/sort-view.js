@@ -55,12 +55,6 @@ export default class SortingView extends AbstractView {
 
   #sortTypeChangeHandler = (evt) => {
     const sortType = evt.currentTarget.dataset.sortType;
-    if (sortType && this.#selectedSortType !== sortType) {
-      const radioInput = this.element.querySelector(`input[data-sort-type="${sortType}"]`);
-      if (radioInput) {
-        radioInput.checked = true;
-      }
-      this.#onSortTypeChange(sortType);
-    }
+    this.#onSortTypeChange(sortType);
   };
 }

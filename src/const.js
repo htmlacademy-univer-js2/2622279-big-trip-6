@@ -3,7 +3,7 @@ const EVENT_TYPES = [
 ];
 
 const CITIES = [
-  'Amsterdam', 'Geneva', 'Chamonix', 'Paris', 'Rome', 'Berlin', 'London', 'Prague', 'Vienna', 'Budapest'
+  'Geneva', 'Madrid', 'Den Haag', 'Berlin', 'Valencia', 'Rome', 'Barcelona', 'Chamonix', 'Oslo', 'Monaco'
 ];
 
 const DESTINATION_DESCRIPTIONS = [
@@ -38,10 +38,32 @@ const SORT_TYPE = {
   PRICE: 'price'
 };
 
+const FilterType = {
+  EVERYTHING: 'everything',
+  FUTURE: 'future',
+  PRESENT: 'present',
+  PAST: 'past',
+};
+
+const UserAction = {
+  UPDATE_POINT: 'UPDATE_POINT',
+  ADD_POINT: 'ADD_POINT',
+  DELETE_POINT: 'DELETE_POINT',
+};
+
+const UpdateType = {
+  PATCH: 'PATCH',
+  MINOR: 'MINOR',
+  MAJOR: 'MAJOR',
+};
+
 export {
   EVENT_TYPES,
   CITIES,
   DESTINATION_DESCRIPTIONS,
   OFFER_TITLES,
-  SORT_TYPE
+  SORT_TYPE,
+  FilterType,
+  UserAction,
+  UpdateType,
 };

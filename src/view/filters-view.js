@@ -1,6 +1,6 @@
 import AbstractView from '../framework/view/abstract-view.js';
 
-function createFiltersTemplate({ filters, selectedFilter }) {
+function createFiltersTemplate(filters, selectedFilter) {
   const filtersTemplate = filters.map(({ id, name, disabled = false }) => `
     <div class="trip-filters__filter">
       <input
@@ -34,9 +34,6 @@ export default class FiltersView extends AbstractView {
   }
 
   get template() {
-    return createFiltersTemplate({
-      filters: this.#filters,
-      selectedFilter: this.#selectedFilter
-    });
+    return createFiltersTemplate(this.#filters, this.#selectedFilter);
   }
 }

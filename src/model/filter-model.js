@@ -1,37 +1,30 @@
+import { FilterType } from '../const.js';
+
 export default class FilterModel {
-  #filters = null;
+  #currentFilter = FilterType.EVERYTHING;
+  #observers = [];
 
-  constructor() {
-    this.#filters = [
-      { id: 'everything', name: 'Everything', disabled: false },
-      { id: 'future', name: 'Future', disabled: false },
-      { id: 'present', name: 'Present', disabled: false },
-      { id: 'past', name: 'Past', disabled: false }
-    ];
+  getFilter() {
+    return this.#currentFilter;
   }
 
-  getFilters() {
-    return this.#filters;
+  setFilter(updateType, filter) {
+    if (this.#currentFilter === filter) {
+      return;
+    }
+    this.#currentFilter = filter;
+    this.#notify(updateType);
   }
 
-  updateFilters(events) {
-    const now = new Date();
+  addObserver(observer) {
+    this.#observers.push(observer);
+  }
 
-    const hasFuture = events.some((event) => new Date(event.dateFrom) > now);
-    const hasPresent = events.some((event) => {
-      const start = new Date(event.dateFrom);
-      const end = new Date(event.dateTo);
-      return start <= now && end >= now;
-    });
-    const hasPast = events.some((event) => new Date(event.dateTo) < now);
+  removeObserver(observer) {
+    this.#observers = this.#observers.filter((obs) => obs !== observer);
+  }
 
-    this.#filters = [
-      { id: 'everything', name: 'Everything', disabled: false },
-      { id: 'future', name: 'Future', disabled: !hasFuture },
-      { id: 'present', name: 'Present', disabled: !hasPresent },
-      { id: 'past', name: 'Past', disabled: !hasPast }
-    ];
-
-    return this.#filters;
+  #notify(updateType) {
+    this.#observers.forEach((observer) => observer(updateType));
   }
 }

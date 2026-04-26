@@ -4,14 +4,8 @@ export const destinationsMock = [
     name: 'Geneva',
     description: 'Geneva - with a beautiful old town',
     pictures: [
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/19.jpg',
-        description: 'Geneva a perfect place to stay with a family'
-      },
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/17.jpg',
-        description: 'Geneva with crowded streets'
-      }
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/19.jpg', description: 'Geneva a perfect place to stay with a family' },
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/17.jpg', description: 'Geneva with crowded streets' }
     ]
   },
   {
@@ -19,14 +13,8 @@ export const destinationsMock = [
     name: 'Madrid',
     description: 'Madrid - for those who value comfort and coziness',
     pictures: [
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/5.jpg',
-        description: 'Madrid for those who value comfort and coziness'
-      },
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/7.jpg',
-        description: 'Madrid with crowded streets'
-      }
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/5.jpg', description: 'Madrid for those who value comfort and coziness' },
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/7.jpg', description: 'Madrid with crowded streets' }
     ]
   },
   {
@@ -45,30 +33,16 @@ export const destinationsMock = [
     id: 'a981d2e5-0324-475a-b814-0779833e6c23',
     name: 'Valencia',
     description: 'Valencia - middle-eastern paradise',
-    pictures: [
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/19.jpg',
-        description: 'Valencia for those who value comfort and coziness'
-      }
-    ]
+    pictures: [{ src: 'https://24.objects.htmlacademy.pro/static/destinations/19.jpg', description: 'Valencia for those who value comfort and coziness' }]
   },
   {
     id: 'adc0f62d-9592-467b-92d3-1882deda2ca5',
     name: 'Rome',
     description: 'Rome - with a beautiful old town',
     pictures: [
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/10.jpg',
-        description: 'Rome a true asian pearl'
-      },
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/4.jpg',
-        description: 'Rome with crowded streets'
-      },
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/20.jpg',
-        description: 'Rome full of cozy canteens'
-      }
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/10.jpg', description: 'Rome a true asian pearl' },
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/4.jpg', description: 'Rome with crowded streets' },
+      { src: 'https://24.objects.htmlacademy.pro/static/destinations/20.jpg', description: 'Rome full of cozy canteens' }
     ]
   },
   {
@@ -87,22 +61,12 @@ export const destinationsMock = [
     id: 'b029dbd0-e23d-40be-9aa2-97828f51b5bb',
     name: 'Oslo',
     description: 'Oslo - is a beautiful city',
-    pictures: [
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/3.jpg',
-        description: 'Oslo full of cozy canteens'
-      }
-    ]
+    pictures: [{ src: 'https://24.objects.htmlacademy.pro/static/destinations/3.jpg', description: 'Oslo full of cozy canteens' }]
   },
   {
     id: 'e05056ac-f5e8-413e-812e-186059ffa8b5',
     name: 'Monaco',
     description: 'Monaco - for those who value comfort and coziness',
-    pictures: [
-      {
-        src: 'https://24.objects.htmlacademy.pro/static/destinations/19.jpg',
-        description: 'Monaco for those who value comfort and coziness'
-      }
-    ]
+    pictures: [{ src: 'https://24.objects.htmlacademy.pro/static/destinations/19.jpg', description: 'Monaco for those who value comfort and coziness' }]
   }
 ];
