@@ -1,9 +1,9 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
 
-function createInfoTemplate({ title, dateFrom, dateTo, cost }) {
+function createInfoTemplate(title, startDate, endDate, cost) {
   const formatDate = (date) => dayjs(date).format('MMM D');
-  const dateString = `${formatDate(dateFrom)}&nbsp;&mdash;&nbsp;${formatDate(dateTo)}`;
+  const dateString = `${formatDate(startDate)}&nbsp;&mdash;&nbsp;${formatDate(endDate)}`;
 
   return `
     <section class="trip-main__trip-info trip-info">
@@ -20,24 +20,19 @@ function createInfoTemplate({ title, dateFrom, dateTo, cost }) {
 
 export default class InfoView extends AbstractView {
   #title = null;
-  #dateFrom = null;
-  #dateTo = null;
+  #startDate = null;
+  #endDate = null;
   #cost = 0;
 
-  constructor(title, dateFrom, dateTo, cost) {
+  constructor(title, startDate, endDate, cost) {
     super();
     this.#title = title;
-    this.#dateFrom = dateFrom;
-    this.#dateTo = dateTo;
+    this.#startDate = startDate;
+    this.#endDate = endDate;
     this.#cost = cost;
   }
 
   get template() {
-    return createInfoTemplate({
-      title: this.#title,
-      dateFrom: this.#dateFrom,
-      dateTo: this.#dateTo,
-      cost: this.#cost
-    });
+    return createInfoTemplate(this.#title, this.#startDate, this.#endDate, this.#cost);
   }
 }
