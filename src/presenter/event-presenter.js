@@ -30,7 +30,7 @@ export default class EventPresenter {
 
   init(point) {
     this.#point = point;
-    this.#renderEvent();
+    this.#renderPoint();
   }
 
   #getFullOffers(eventType, selectedOfferIds) {
@@ -38,67 +38,24 @@ export default class EventPresenter {
     return offersByType.filter((offer) => selectedOfferIds.includes(offer.id));
   }
 
-  #renderEvent() {
-    if (this.#mode === Mode.EDITING) {
-      this.#renderEditForm();
-    } else {
-      this.#renderPoint();
-    }
-  }
-
   #renderPoint() {
     const destination = this.#destinations?.find((d) => d.id === this.#point.destination) || { name: '', description: '', pictures: [] };
     const pointOffers = this.#getFullOffers(this.#point.type, this.#point.offers || []);
 
-    const prevPointComponent = this.#pointComponent;
-    const prevEditComponent = this.#editComponent;
+    if (this.#pointComponent) {
+      remove(this.#pointComponent);
+    }
 
     this.#pointComponent = new RoutePointView({
       point: this.#point,
       destination: destination,
       offers: pointOffers,
-      onRollupClick: this.#handleEditClick,
-      onFavoriteClick: this.#handleFavoriteClick
+      onRollupClick: () => this.#handleEditClick(),
+      onFavoriteClick: () => this.#handleFavoriteClick()
     });
 
-    if (prevEditComponent) {
-      remove(prevEditComponent);
-      this.#editComponent = null;
-    }
-
-    if (prevPointComponent) {
-      replace(this.#pointComponent, prevPointComponent);
-    } else {
-      render(this.#pointComponent, this.#eventsContainer);
-    }
-
+    render(this.#pointComponent, this.#eventsContainer);
     this.#mode = Mode.DEFAULT;
-  }
-
-  #renderEditForm() {
-    const prevPointComponent = this.#pointComponent;
-    const prevEditComponent = this.#editComponent;
-
-    this.#editComponent = new FormEditView({
-      point: this.#point,
-      destinations: this.#destinations,
-      offers: this.#offers,
-      onFormSubmit: this.#handleFormSubmit,
-      onResetClick: this.#handleResetClick,
-      onRollupClick: this.#handleCloseClick
-    });
-
-    if (prevPointComponent) {
-      replace(this.#editComponent, prevPointComponent);
-      this.#pointComponent = null;
-    } else if (prevEditComponent) {
-      replace(this.#editComponent, prevEditComponent);
-    } else {
-      render(this.#editComponent, this.#eventsContainer);
-    }
-
-    this.#mode = Mode.EDITING;
-    document.addEventListener('keydown', this.#escKeyDownHandler);
   }
 
   destroy() {
@@ -114,66 +71,73 @@ export default class EventPresenter {
   }
 
   resetView() {
-    if (this.#mode !== Mode.DEFAULT) {
-      this.#replaceEditToPoint();
+    if (this.#mode === Mode.EDITING) {
+      this.#closeEditForm();
     }
   }
 
-  #replaceEditToPoint() {
-    if (!this.#pointComponent || !this.#editComponent) {
-      if (this.#editComponent) {
-        remove(this.#editComponent);
+  #openEditForm() {
+    if (this.#editComponent) {
+      return;
+    }
+
+    if (!this.#pointComponent || !this.#pointComponent.element) {
+      return;
+    }
+
+    this.#editComponent = new FormEditView({
+      point: this.#point,
+      destinations: this.#destinations,
+      offers: this.#offers,
+      onFormSubmit: (point) => this.#handleFormSubmit(point),
+      onResetClick: () => this.#handleDeleteClick(),
+      onRollupClick: () => this.#closeEditForm()
+    });
+
+    try {
+      replace(this.#editComponent, this.#pointComponent);
+      this.#mode = Mode.EDITING;
+      document.addEventListener('keydown', this.#escKeyDownHandler);
+    } catch (err) {
+      this.#editComponent = null;
+    }
+  }
+
+  #closeEditForm() {
+    if (this.#pointComponent && this.#editComponent) {
+      try {
+        replace(this.#pointComponent, this.#editComponent);
+        this.#editComponent = null;
+        this.#mode = Mode.DEFAULT;
+        document.removeEventListener('keydown', this.#escKeyDownHandler);
+      } catch (err) {
         this.#editComponent = null;
       }
-      this.#renderPoint();
-      return;
     }
-
-    replace(this.#pointComponent, this.#editComponent);
-    this.#editComponent = null;
-    this.#mode = Mode.DEFAULT;
-    document.removeEventListener('keydown', this.#escKeyDownHandler);
-  }
-
-  #replacePointToEdit() {
-    if (!this.#editComponent || !this.#pointComponent) {
-      this.#renderEditForm();
-      return;
-    }
-
-    replace(this.#editComponent, this.#pointComponent);
-    this.#pointComponent = null;
-    this.#mode = Mode.EDITING;
-    this.#handleModeChange();
-    document.addEventListener('keydown', this.#escKeyDownHandler);
   }
 
   #escKeyDownHandler = (evt) => {
     if (evt.key === 'Escape' || evt.key === 'Esc') {
       evt.preventDefault();
-      this.#replaceEditToPoint();
+      this.#closeEditForm();
     }
   };
 
   #handleEditClick = () => {
-    this.#replacePointToEdit();
+    this.#openEditForm();
   };
 
-  #handleCloseClick = () => {
-    this.#replaceEditToPoint();
-  };
-
-  #handleResetClick = async () => {
+  #handleDeleteClick = async () => {
     if (this.#point.id) {
       this.#editComponent?.setDeleting(true);
       try {
         await this.#handleDataChange(UserAction.DELETE_POINT, UpdateType.MAJOR, this.#point);
-      } catch (error) {
+      } catch {
         this.#editComponent?.shake();
         this.#editComponent?.setDeleting(false);
       }
     } else {
-      this.#replaceEditToPoint();
+      this.#closeEditForm();
     }
   };
 
@@ -182,28 +146,27 @@ export default class EventPresenter {
       ...this.#point,
       isFavorite: !this.#point.isFavorite
     };
+
+    const favBtn = this.#pointComponent?.element.querySelector('.event__favorite-btn');
+    if (favBtn) {
+      favBtn.disabled = true;
+    }
+
     try {
       await this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MINOR, updatedPoint);
       this.#point = updatedPoint;
-      if (this.#pointComponent) {
-        const destination = this.#destinations?.find((d) => d.id === this.#point.destination) || { name: '', description: '', pictures: [] };
-        const pointOffers = this.#getFullOffers(this.#point.type, this.#point.offers || []);
 
-        const newPointComponent = new RoutePointView({
-          point: this.#point,
-          destination: destination,
-          offers: pointOffers,
-          onRollupClick: this.#handleEditClick,
-          onFavoriteClick: this.#handleFavoriteClick
-        });
-
-        if (this.#pointComponent) {
-          replace(newPointComponent, this.#pointComponent);
+      if (favBtn) {
+        if (this.#point.isFavorite) {
+          favBtn.classList.add('event__favorite-btn--active');
+        } else {
+          favBtn.classList.remove('event__favorite-btn--active');
         }
-        this.#pointComponent = newPointComponent;
       }
-    } catch (error) {
-      // Обработка ошибки
+    } finally {
+      if (favBtn) {
+        favBtn.disabled = false;
+      }
     }
   };
 
@@ -230,8 +193,8 @@ export default class EventPresenter {
         return;
       }
 
-      this.#replaceEditToPoint();
-    } catch (error) {
+      this.#closeEditForm();
+    } catch {
       this.#editComponent?.shake();
     } finally {
       this.#editComponent?.setSaving(false);
