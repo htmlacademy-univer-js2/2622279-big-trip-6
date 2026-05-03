@@ -129,21 +129,17 @@ export default class PagePresenter {
   #handleViewAction = async (actionType, updateType, update) => {
     switch (actionType) {
       case UserAction.UPDATE_POINT:
-        try {
-          await this.#eventsModel.updateEvent(updateType, update);
-        } catch (err) {
-          // Обработка ошибки
-        }
+        await this.#eventsModel.updateEvent(updateType, update);
         break;
       case UserAction.ADD_POINT:
-        this.#eventsModel.addEvent(update);
+        await this.#eventsModel.addEvent(updateType, update);
         if (this.#newPointPresenter) {
           this.#newPointPresenter.destroy();
           this.#newPointPresenter = null;
         }
         break;
       case UserAction.DELETE_POINT:
-        this.#eventsModel.deleteEvent(update.id);
+        await this.#eventsModel.deleteEvent(updateType, update.id);
         break;
     }
   };
@@ -274,6 +270,9 @@ export default class PagePresenter {
   }
 
   #handleSortTypeChange(sortType) {
+    if (this.#currentSortType === sortType) {
+      return;
+    }
     this.#currentSortType = sortType;
     this.#fullRefresh();
   }
