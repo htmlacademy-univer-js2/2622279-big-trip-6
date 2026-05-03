@@ -18,24 +18,25 @@ export default class NewPointPresenter {
   #handleDataChange = null;
   #pointEditComponent = null;
   #destroyCallback = null;
-  #isOpened = false;
+  #eventsModel = null;
 
-  constructor({ eventsContainer, onDataChange }) {
+  constructor({ eventsContainer, eventsModel, onDataChange }) {
     this.#eventsContainer = eventsContainer;
+    this.#eventsModel = eventsModel;
     this.#handleDataChange = onDataChange;
   }
 
   init(callback) {
     this.#destroyCallback = callback;
 
-    if (this.#pointEditComponent !== null || this.#isOpened) {
+    if (this.#pointEditComponent !== null) {
       return;
     }
 
-    this.#isOpened = true;
-
     this.#pointEditComponent = new FormEditView({
       point: BLANK_POINT,
+      destinations: this.#eventsModel.getDestinations(),
+      offers: this.#eventsModel.getOffers(),
       onFormSubmit: (point) => {
         const newPoint = {
           ...point,
@@ -64,7 +65,6 @@ export default class NewPointPresenter {
     this.#destroyCallback?.();
     remove(this.#pointEditComponent);
     this.#pointEditComponent = null;
-    this.#isOpened = false;
     document.removeEventListener('keydown', this.#escKeyDownHandler);
   }
 

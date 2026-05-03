@@ -14,12 +14,18 @@ export default class FilterPresenter {
     this.#filterModel = filterModel;
     this.#eventsModel = eventsModel;
 
-    // Подписываемся на изменения модели фильтра
     this.#filterModel.addObserver(this.#handleModelChange.bind(this));
+    this.#eventsModel.addObserver(this.#handleEventsChange.bind(this));
   }
 
   init() {
     this.#renderFilters();
+  }
+
+  #handleEventsChange(updateType) {
+    if (updateType === UpdateType.INIT || updateType === UpdateType.MAJOR || updateType === UpdateType.MINOR) {
+      this.#renderFilters();
+    }
   }
 
   #handleModelChange() {
@@ -29,12 +35,14 @@ export default class FilterPresenter {
   #getFilters() {
     const events = this.#eventsModel.getAllFullEvents();
 
-    return [
+    const filters = [
       { id: FilterType.EVERYTHING, name: 'Everything', disabled: false },
       { id: FilterType.FUTURE, name: 'Future', disabled: !events.some((event) => isPointFuture(event)) },
       { id: FilterType.PRESENT, name: 'Present', disabled: !events.some((event) => isPointPresent(event)) },
       { id: FilterType.PAST, name: 'Past', disabled: !events.some((event) => isPointPast(event)) },
     ];
+
+    return filters;
   }
 
   #renderFilters() {
@@ -51,7 +59,12 @@ export default class FilterPresenter {
       remove(prevFilterComponent);
     }
 
+    this.#addFilterListeners();
+  }
+
+  #addFilterListeners() {
     const filterInputs = this.#filterComponent.element.querySelectorAll('.trip-filters__filter-input');
+
     filterInputs.forEach((input) => {
       input.removeEventListener('change', this.#filterChangeHandler);
       input.addEventListener('change', this.#filterChangeHandler);
@@ -60,9 +73,7 @@ export default class FilterPresenter {
 
   #filterChangeHandler = (evt) => {
     const newFilter = evt.target.value;
-    const currentFilter = this.#filterModel.getFilter();
-
-    if (currentFilter !== newFilter) {
+    if (!evt.target.disabled) {
       this.#filterModel.setFilter(UpdateType.MAJOR, newFilter);
     }
   };

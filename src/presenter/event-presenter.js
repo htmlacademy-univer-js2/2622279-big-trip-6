@@ -1,8 +1,8 @@
 import RoutePointView from '../view/route-point-view.js';
 import FormEditView from '../view/form-edit-view.js';
 import { render, replace, remove } from '../framework/render.js';
-import { destinationsMock } from '../mock/destinations-mock.js';
 import { UserAction, UpdateType } from '../const.js';
+import dayjs from 'dayjs';
 
 const Mode = {
   DEFAULT: 'DEFAULT',
@@ -11,6 +11,8 @@ const Mode = {
 
 export default class EventPresenter {
   #eventsContainer = null;
+  #destinations = null;
+  #offers = null;
   #handleDataChange = null;
   #handleModeChange = null;
   #point = null;
@@ -18,8 +20,10 @@ export default class EventPresenter {
   #editComponent = null;
   #mode = Mode.DEFAULT;
 
-  constructor({ eventsContainer, onDataChange, onModeChange }) {
+  constructor({ eventsContainer, destinations, offers, onDataChange, onModeChange }) {
     this.#eventsContainer = eventsContainer;
+    this.#destinations = destinations;
+    this.#offers = offers;
     this.#handleDataChange = onDataChange;
     this.#handleModeChange = onModeChange;
   }
@@ -29,21 +33,23 @@ export default class EventPresenter {
     const prevPointComponent = this.#pointComponent;
     const prevEditComponent = this.#editComponent;
 
-    const destination = destinationsMock.find((d) => d.id === point.destination) || point.destination || { name: '', description: '', pictures: [] };
-    const offers = point.offers || [];
+    const destination = this.#destinations?.find((d) => d.id === point.destination) || { name: '', description: '', pictures: [] };
+    const pointOffers = this.#getFullOffers(point.type, point.offers || []);
 
     this.#pointComponent = new RoutePointView({
       point: this.#point,
       destination: destination,
-      offers: offers,
+      offers: pointOffers,
       onRollupClick: this.#handleEditClick,
       onFavoriteClick: this.#handleFavoriteClick
     });
 
     this.#editComponent = new FormEditView({
       point: this.#point,
+      destinations: this.#destinations,
+      offers: this.#offers,
       onFormSubmit: this.#handleFormSubmit,
-      onResetClick: this.#handleCloseClick,
+      onResetClick: this.#handleResetClick,
       onRollupClick: this.#handleCloseClick
     });
 
@@ -72,6 +78,11 @@ export default class EventPresenter {
     if (prevEditComponent) {
       remove(prevEditComponent);
     }
+  }
+
+  #getFullOffers(eventType, selectedOfferIds) {
+    const offersByType = this.#offers[eventType] || [];
+    return offersByType.filter((offer) => selectedOfferIds.includes(offer.id));
   }
 
   destroy() {
@@ -118,22 +129,80 @@ export default class EventPresenter {
   };
 
   #handleCloseClick = () => {
-    if (this.#point && this.#point.id) {
-      this.#handleDataChange(UserAction.DELETE_POINT, UpdateType.MINOR, this.#point);
-    }
     this.#replaceFormToCard();
   };
 
-  #handleFavoriteClick = () => {
+  #handleResetClick = async () => {
+    if (this.#point.id) {
+      try {
+        await this.#handleDataChange(UserAction.DELETE_POINT, UpdateType.MAJOR, this.#point);
+      } catch (error) {
+        if (this.#editComponent && this.#editComponent.shake) {
+          this.#editComponent.shake();
+        }
+      }
+    } else {
+      this.#replaceFormToCard();
+    }
+  };
+
+  #handleFavoriteClick = async () => {
     const updatedPoint = {
       ...this.#point,
       isFavorite: !this.#point.isFavorite
     };
-    this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MINOR, updatedPoint);
+    try {
+      await this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MINOR, updatedPoint);
+      this.#point = updatedPoint;
+    } catch (error) {
+      // Можно показать ошибку, но по заданию пока не требуется
+    }
   };
 
-  #handleFormSubmit = (updatedPoint) => {
-    this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MINOR, updatedPoint);
-    this.#replaceFormToCard();
+  #handleFormSubmit = async (updatedPoint) => {
+    if (!this.#isValid(updatedPoint)) {
+      if (this.#editComponent && this.#editComponent.shake) {
+        this.#editComponent.shake();
+      }
+      return;
+    }
+
+    try {
+      const pointForSubmit = {
+        ...updatedPoint,
+        destination: updatedPoint.destination.id || updatedPoint.destination
+      };
+      await this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MAJOR, pointForSubmit);
+      this.#point = updatedPoint;
+      this.#replaceFormToCard();
+    } catch (error) {
+      if (this.#editComponent && this.#editComponent.shake) {
+        this.#editComponent.shake();
+      }
+    }
   };
+
+  #isValid(point) {
+    if (!point.type) {
+      return false;
+    }
+
+    if (!point.destination || !point.destination.id) {
+      return false;
+    }
+
+    if (!point.dateFrom || !point.dateTo) {
+      return false;
+    }
+
+    if (dayjs(point.dateTo).isBefore(dayjs(point.dateFrom))) {
+      return false;
+    }
+
+    if (point.basePrice < 0 || isNaN(point.basePrice)) {
+      return false;
+    }
+
+    return true;
+  }
 }

@@ -3,51 +3,8 @@ import { EVENT_TYPES } from '../const.js';
 import dayjs from 'dayjs';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import { destinationsMock } from '../mock/destinations-mock.js';
 
-function generateOffersForType(type) {
-  const offersData = {
-    taxi: [
-      { id: 'taxi-1', title: 'Baby seat', price: 15 },
-      { id: 'taxi-2', title: 'Pet transportation', price: 25 },
-      { id: 'taxi-3', title: 'Wait driver', price: 20 },
-      { id: 'taxi-4', title: 'Air conditioning', price: 10 }
-    ],
-    flight: [
-      { id: 'flight-1', title: 'Add luggage', price: 30 },
-      { id: 'flight-2', title: 'Business class', price: 150 },
-      { id: 'flight-3', title: 'Preference meal', price: 25 },
-      { id: 'flight-4', title: 'Seat selection', price: 15 }
-    ],
-    train: [
-      { id: 'train-1', title: 'Meal', price: 20 },
-      { id: 'train-2', title: 'Bedding', price: 15 },
-      { id: 'train-3', title: 'First class', price: 80 }
-    ],
-    bus: [
-      { id: 'bus-1', title: 'Wi-Fi', price: 5 },
-      { id: 'bus-2', title: 'USB charger', price: 8 },
-      { id: 'bus-3', title: 'Extra luggage', price: 15 }
-    ],
-    'check-in': [
-      { id: 'check-in-1', title: 'Late checkout', price: 30 },
-      { id: 'check-in-2', title: 'Breakfast', price: 20 },
-      { id: 'check-in-3', title: 'Early check-in', price: 25 }
-    ],
-    sightseeing: [
-      { id: 'sightseeing-1', title: 'Guide', price: 25 },
-      { id: 'sightseeing-2', title: 'Audio guide', price: 10 },
-      { id: 'sightseeing-3', title: 'Skip the line', price: 15 }
-    ],
-    restaurant: [
-      { id: 'restaurant-1', title: 'Reservation', price: 15 },
-      { id: 'restaurant-2', title: 'VIP zone', price: 50 }
-    ]
-  };
-  return offersData[type] || [];
-}
-
-function createFormEditTemplate(state) {
+function createFormEditTemplate(state, destinations, offers) {
   const {
     type = EVENT_TYPES[0],
     destinationId = null,
@@ -58,8 +15,8 @@ function createFormEditTemplate(state) {
     id = null,
   } = state;
 
-  const selectedDestination = destinationsMock.find((d) => d.id === destinationId) || { name: '', description: '', pictures: [] };
-  const currentOffers = generateOffersForType(type);
+  const selectedDestination = destinations.find((d) => d.id === destinationId) || { name: '', description: '', pictures: [] };
+  const currentOffers = offers[type] || [];
 
   const resetButtonText = id ? 'Delete' : 'Cancel';
 
@@ -82,7 +39,7 @@ function createFormEditTemplate(state) {
     </div>
   `).join('');
 
-  const destinationsListTemplate = destinationsMock.map((dest) => `
+  const destinationsListTemplate = destinations.map((dest) => `
     <option value="${dest.name}" data-destination-id="${dest.id}"></option>
   `).join('');
 
@@ -215,11 +172,15 @@ export default class FormEditView extends AbstractStatefulView {
   #handleFormSubmit = null;
   #handleResetClick = null;
   #handleRollupClick = null;
+  #destinations = null;
+  #offers = null;
   #datepickerStart = null;
   #datepickerEnd = null;
 
-  constructor({ point, onFormSubmit, onResetClick, onRollupClick }) {
+  constructor({ point, destinations, offers, onFormSubmit, onResetClick, onRollupClick }) {
     super();
+    this.#destinations = destinations;
+    this.#offers = offers;
     this.#handleFormSubmit = onFormSubmit;
     this.#handleResetClick = onResetClick;
     this.#handleRollupClick = onRollupClick;
@@ -231,7 +192,7 @@ export default class FormEditView extends AbstractStatefulView {
       } else if (typeof point.destination === 'string') {
         destinationId = point.destination;
       } else if (point.destination.name) {
-        const foundDest = destinationsMock.find((d) => d.name === point.destination.name);
+        const foundDest = this.#destinations.find((d) => d.name === point.destination.name);
         if (foundDest) {
           destinationId = foundDest.id;
         }
@@ -245,7 +206,7 @@ export default class FormEditView extends AbstractStatefulView {
       dateFrom: point.dateFrom,
       dateTo: point.dateTo,
       basePrice: point.basePrice,
-      selectedOffers: point.offers?.map((offer) => offer.id) || []
+      selectedOffers: point.offers || []
     };
 
     this._setState(initialState);
@@ -253,7 +214,7 @@ export default class FormEditView extends AbstractStatefulView {
   }
 
   get template() {
-    return createFormEditTemplate(this._state);
+    return createFormEditTemplate(this._state, this.#destinations, this.#offers);
   }
 
   removeElement() {
@@ -269,7 +230,7 @@ export default class FormEditView extends AbstractStatefulView {
       } else if (typeof point.destination === 'string') {
         destinationId = point.destination;
       } else if (point.destination.name) {
-        const foundDest = destinationsMock.find((d) => d.name === point.destination.name);
+        const foundDest = this.#destinations.find((d) => d.name === point.destination.name);
         if (foundDest) {
           destinationId = foundDest.id;
         }
@@ -287,6 +248,23 @@ export default class FormEditView extends AbstractStatefulView {
     };
 
     this.updateElement(newState);
+  }
+
+  shake() {
+    const form = this.element.querySelector('.event--edit');
+    if (!form) {
+      return;
+    }
+
+    form.style.transform = 'translateX(0)';
+    form.style.animation = 'shake 0.5s ease-in-out';
+
+    const onAnimationEnd = () => {
+      form.style.animation = '';
+      form.removeEventListener('animationend', onAnimationEnd);
+    };
+
+    form.addEventListener('animationend', onAnimationEnd);
   }
 
   _restoreHandlers() {
@@ -322,7 +300,7 @@ export default class FormEditView extends AbstractStatefulView {
     if (destinationInput) {
       destinationInput.addEventListener('change', (evt) => {
         const destinationName = evt.target.value;
-        const selectedDestination = destinationsMock.find((d) => d.name === destinationName);
+        const selectedDestination = this.#destinations.find((d) => d.name === destinationName);
 
         if (selectedDestination) {
           const newState = {
@@ -426,8 +404,8 @@ export default class FormEditView extends AbstractStatefulView {
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
 
-    const destination = destinationsMock.find((d) => d.id === this._state.destinationId);
-    const currentOffers = generateOffersForType(this._state.type);
+    const destination = this.#destinations.find((d) => d.id === this._state.destinationId);
+    const currentOffers = this.#offers[this._state.type] || [];
     const selectedOffers = currentOffers.filter((offer) =>
       this._state.selectedOffers.includes(offer.id)
     );
