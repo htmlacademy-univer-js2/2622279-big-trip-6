@@ -118,11 +118,15 @@ export default class RoutePointView extends AbstractView {
 
   #rollupClickHandler = (evt) => {
     evt.preventDefault();
-    this.#onRollupClick();
+    evt.stopPropagation();
+    if (this.#onRollupClick) {
+      this.#onRollupClick();
+    }
   };
 
   #favoriteClickHandler = (evt) => {
     evt.preventDefault();
+    evt.stopPropagation();
     this.#onFavoriteClick();
   };
 }

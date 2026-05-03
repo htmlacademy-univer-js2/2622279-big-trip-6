@@ -192,11 +192,68 @@ export default class PagePresenter {
 
   #updateEvents() {
     this.#clearEvents();
+    this.#renderInfo();
     this.#renderEvents();
   }
 
+  #getTripTitle() {
+    const events = this.#eventsModel.getAllFullEvents();
+    if (events.length === 0) {
+      return '';
+    }
+
+    const sortedEvents = [...events].sort((a, b) => new Date(a.dateFrom) - new Date(b.dateFrom));
+    const destinations = this.#eventsModel.getDestinations();
+
+    const firstDestination = destinations.find((d) => d.id === sortedEvents[0].destination)?.name || '';
+    const lastDestination = destinations.find((d) => d.id === sortedEvents[sortedEvents.length - 1].destination)?.name || '';
+
+    if (sortedEvents.length <= 3) {
+      const allDestinations = sortedEvents.map((event) =>
+        destinations.find((d) => d.id === event.destination)?.name || ''
+      ).join(' — ');
+      return allDestinations;
+    }
+
+    return `${firstDestination} — ... — ${lastDestination}`;
+  }
+
+  #getTripDates() {
+    const events = this.#eventsModel.getAllFullEvents();
+    if (events.length === 0) {
+      return { startDate: new Date(), endDate: new Date() };
+    }
+
+    const sortedEvents = [...events].sort((a, b) => new Date(a.dateFrom) - new Date(b.dateFrom));
+    const startDate = new Date(sortedEvents[0].dateFrom);
+    const endDate = new Date(sortedEvents[sortedEvents.length - 1].dateTo);
+
+    return { startDate, endDate };
+  }
+
+  #getTotalPrice() {
+    const events = this.#eventsModel.getAllFullEvents();
+    const offers = this.#eventsModel.getOffers();
+
+    return events.reduce((total, event) => {
+      let eventTotal = event.basePrice;
+
+      if (event.offers && event.offers.length > 0) {
+        const eventOffers = offers[event.type] || [];
+        event.offers.forEach((offerId) => {
+          const offer = eventOffers.find((o) => o.id === offerId);
+          if (offer) {
+            eventTotal += offer.price;
+          }
+        });
+      }
+
+      return total + eventTotal;
+    }, 0);
+  }
+
   #renderInfo() {
-    const events = this.#getFilteredEvents();
+    const events = this.#eventsModel.getAllFullEvents();
 
     if (events.length === 0) {
       if (this.#infoComponent) {
@@ -210,36 +267,9 @@ export default class PagePresenter {
       this.#infoComponent.removeElement();
     }
 
-    const sortedEvents = [...events].sort((a, b) =>
-      new Date(a.dateFrom) - new Date(b.dateFrom)
-    );
-
-    const firstEvent = sortedEvents[0];
-    const lastEvent = sortedEvents[sortedEvents.length - 1];
-
-    const destinations = this.#eventsModel.getDestinations();
-    const firstDestination = destinations.find((d) => d.id === firstEvent.destination)?.name || '';
-    const lastDestination = destinations.find((d) => d.id === lastEvent.destination)?.name || '';
-
-    const title = `${firstDestination} &mdash; ${lastDestination}`;
-
-    const startDate = new Date(firstEvent.dateFrom);
-    const endDate = new Date(lastEvent.dateTo);
-
-    const offers = this.#eventsModel.getOffers();
-    const totalCost = events.reduce((sum, event) => {
-      let eventCost = event.basePrice;
-      if (event.offers && event.offers.length) {
-        const typeOffers = offers[event.type] || [];
-        event.offers.forEach((offerId) => {
-          const offer = typeOffers.find((o) => o.id === offerId);
-          if (offer) {
-            eventCost += offer.price;
-          }
-        });
-      }
-      return sum + eventCost;
-    }, 0);
+    const title = this.#getTripTitle();
+    const { startDate, endDate } = this.#getTripDates();
+    const totalCost = this.#getTotalPrice();
 
     this.#infoComponent = new InfoView(title, startDate, endDate, totalCost);
     const tripMain = document.querySelector('.trip-main');

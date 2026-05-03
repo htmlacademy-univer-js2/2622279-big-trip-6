@@ -8,7 +8,7 @@ const BLANK_POINT = {
   type: 'flight',
   destination: null,
   dateFrom: new Date(),
-  dateTo: new Date(),
+  dateTo: dayjs().add(1, 'day').toDate(),
   basePrice: 0,
   offers: [],
   isFavorite: false
