@@ -1,6 +1,7 @@
 import { render, remove } from '../framework/render.js';
 import FormEditView from '../view/form-edit-view.js';
 import { UserAction, UpdateType } from '../const.js';
+import dayjs from 'dayjs';
 
 const BLANK_POINT = {
   id: null,
@@ -37,20 +38,9 @@ export default class NewPointPresenter {
       point: BLANK_POINT,
       destinations: this.#eventsModel.getDestinations(),
       offers: this.#eventsModel.getOffers(),
-      onFormSubmit: (point) => {
-        const newPoint = {
-          ...point,
-          id: `event-${Date.now()}`,
-        };
-        this.#handleDataChange(UserAction.ADD_POINT, UpdateType.MINOR, newPoint);
-        this.destroy();
-      },
-      onResetClick: () => {
-        this.destroy();
-      },
-      onRollupClick: () => {
-        this.destroy();
-      }
+      onFormSubmit: this.#handleFormSubmit,
+      onResetClick: this.#handleResetClick,
+      onRollupClick: this.#handleResetClick
     });
 
     render(this.#pointEditComponent, this.#eventsContainer, 'afterbegin');
@@ -66,6 +56,54 @@ export default class NewPointPresenter {
     remove(this.#pointEditComponent);
     this.#pointEditComponent = null;
     document.removeEventListener('keydown', this.#escKeyDownHandler);
+  }
+
+  #handleFormSubmit = async (point) => {
+    if (!this.#isValid(point)) {
+      this.#pointEditComponent?.shake();
+      return;
+    }
+
+    this.#pointEditComponent?.setSaving(true);
+
+    try {
+      await this.#handleDataChange(UserAction.ADD_POINT, UpdateType.MAJOR, point);
+      this.destroy();
+    } catch (error) {
+      this.#pointEditComponent?.shake();
+    } finally {
+      if (this.#pointEditComponent) {
+        this.#pointEditComponent.setSaving(false);
+      }
+    }
+  };
+
+  #handleResetClick = () => {
+    this.destroy();
+  };
+
+  #isValid(point) {
+    if (!point.type) {
+      return false;
+    }
+
+    if (!point.destination || !point.destination.id) {
+      return false;
+    }
+
+    if (!point.dateFrom || !point.dateTo) {
+      return false;
+    }
+
+    if (dayjs(point.dateTo).isBefore(dayjs(point.dateFrom))) {
+      return false;
+    }
+
+    if (point.basePrice < 0 || isNaN(point.basePrice)) {
+      return false;
+    }
+
+    return true;
   }
 
   #escKeyDownHandler = (evt) => {

@@ -14,12 +14,11 @@ export default class EventsModel extends Observable {
 
   async init() {
     try {
-      // API сервис уже возвращает адаптированные данные
       const points = await this.#apiService.getPoints();
       const destinations = await this.#apiService.getDestinations();
       const offers = await this.#apiService.getOffers();
 
-      this.#events = points; // Уже адаптированы в api-service
+      this.#events = points;
       this.#destinations = destinations;
       this.#offers = offers;
 
@@ -62,14 +61,26 @@ export default class EventsModel extends Observable {
     }
   }
 
-  addEvent(event) {
-    this.#events = [event, ...this.#events];
-    this._notify(UpdateType.MINOR);
-    return event;
+  async addEvent(updateType, event) {
+    try {
+      const response = await this.#apiService.addPoint(event);
+      this.#events = [response, ...this.#events];
+      this._notify(updateType);
+    } catch (err) {
+      throw new Error('Failed to add event');
+    }
   }
 
-  deleteEvent(eventId) {
-    this.#events = this.#events.filter((event) => event.id !== eventId);
-    this._notify(UpdateType.MINOR);
+  async deleteEvent(updateType, eventId) {
+    try {
+      await this.#apiService.deletePoint(eventId);
+      const index = this.#events.findIndex((event) => event.id === eventId);
+      if (index !== -1) {
+        this.#events = [...this.#events.slice(0, index), ...this.#events.slice(index + 1)];
+        this._notify(updateType);
+      }
+    } catch (err) {
+      throw new Error('Failed to delete event');
+    }
   }
 }

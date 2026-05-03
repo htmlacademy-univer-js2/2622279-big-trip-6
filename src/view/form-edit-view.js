@@ -244,7 +244,7 @@ export default class FormEditView extends AbstractStatefulView {
       dateFrom: point.dateFrom,
       dateTo: point.dateTo,
       basePrice: point.basePrice,
-      selectedOffers: point.offers?.map((offer) => offer.id) || []
+      selectedOffers: point.offers || []
     };
 
     this.updateElement(newState);
@@ -267,6 +267,52 @@ export default class FormEditView extends AbstractStatefulView {
     form.addEventListener('animationend', onAnimationEnd);
   }
 
+  setSaving(isSaving) {
+    const saveBtn = this.element?.querySelector('.event__save-btn');
+    const resetBtn = this.element?.querySelector('.event__reset-btn');
+
+    if (saveBtn) {
+      saveBtn.textContent = isSaving ? 'Saving...' : 'Save';
+      saveBtn.disabled = isSaving;
+    }
+
+    if (resetBtn && this._state?.id) {
+      resetBtn.disabled = isSaving;
+    }
+
+    const inputs = this.element?.querySelectorAll('input, button, select, textarea');
+    if (inputs) {
+      inputs.forEach((input) => {
+        if (input !== saveBtn && input !== resetBtn) {
+          input.disabled = isSaving;
+        }
+      });
+    }
+  }
+
+  setDeleting(isDeleting) {
+    const resetBtn = this.element?.querySelector('.event__reset-btn');
+    const saveBtn = this.element?.querySelector('.event__save-btn');
+
+    if (resetBtn) {
+      resetBtn.textContent = isDeleting ? 'Deleting...' : 'Delete';
+      resetBtn.disabled = isDeleting;
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = isDeleting;
+    }
+
+    const inputs = this.element?.querySelectorAll('input, button, select, textarea');
+    if (inputs) {
+      inputs.forEach((input) => {
+        if (input !== saveBtn && input !== resetBtn) {
+          input.disabled = isDeleting;
+        }
+      });
+    }
+  }
+
   _restoreHandlers() {
     const form = this.element.querySelector('form');
     if (form) {
@@ -287,12 +333,13 @@ export default class FormEditView extends AbstractStatefulView {
     typeInputs.forEach((input) => {
       input.addEventListener('change', (evt) => {
         const newType = evt.target.value;
-        const newState = {
+
+        // Полное обновление компонента с новым типом
+        this.updateElement({
           ...this._state,
           type: newType,
           selectedOffers: []
-        };
-        this.updateElement(newState);
+        });
       });
     });
 
@@ -303,11 +350,10 @@ export default class FormEditView extends AbstractStatefulView {
         const selectedDestination = this.#destinations.find((d) => d.name === destinationName);
 
         if (selectedDestination) {
-          const newState = {
+          this.updateElement({
             ...this._state,
             destinationId: selectedDestination.id
-          };
-          this.updateElement(newState);
+          });
         }
       });
     }
@@ -319,6 +365,7 @@ export default class FormEditView extends AbstractStatefulView {
         const isChecked = evt.target.checked;
 
         let updatedOffers = [...(this._state.selectedOffers || [])];
+
         if (isChecked) {
           if (!updatedOffers.includes(offerId)) {
             updatedOffers.push(offerId);
@@ -327,11 +374,10 @@ export default class FormEditView extends AbstractStatefulView {
           updatedOffers = updatedOffers.filter((id) => id !== offerId);
         }
 
-        const newState = {
+        this.updateElement({
           ...this._state,
           selectedOffers: updatedOffers
-        };
-        this.updateElement(newState);
+        });
       });
     });
 
@@ -375,11 +421,7 @@ export default class FormEditView extends AbstractStatefulView {
         'time_24hr': true,
         defaultDate: dayjs(this._state.dateFrom).toDate(),
         onChange: ([userDate]) => {
-          const newState = { ...this._state, dateFrom: userDate };
-          if (this.#datepickerEnd && userDate) {
-            this.#datepickerEnd.set('minDate', userDate);
-          }
-          this.updateElement(newState);
+          this.updateElement({ ...this._state, dateFrom: userDate });
         },
         locale: { firstDayOfWeek: 1 }
       });
@@ -392,8 +434,7 @@ export default class FormEditView extends AbstractStatefulView {
         'time_24hr': true,
         defaultDate: dayjs(this._state.dateTo).toDate(),
         onChange: ([userDate]) => {
-          const newState = { ...this._state, dateTo: userDate };
-          this.updateElement(newState);
+          this.updateElement({ ...this._state, dateTo: userDate });
         },
         minDate: dayjs(this._state.dateFrom).toDate(),
         locale: { firstDayOfWeek: 1 }
@@ -406,8 +447,10 @@ export default class FormEditView extends AbstractStatefulView {
 
     const destination = this.#destinations.find((d) => d.id === this._state.destinationId);
     const currentOffers = this.#offers[this._state.type] || [];
-    const selectedOffers = currentOffers.filter((offer) =>
-      this._state.selectedOffers.includes(offer.id)
+    const selectedOffers = this._state.selectedOffers || [];
+
+    const selectedOffersObjects = currentOffers.filter((offer) =>
+      selectedOffers.includes(offer.id)
     );
 
     const updatedPoint = {
@@ -417,7 +460,7 @@ export default class FormEditView extends AbstractStatefulView {
       dateFrom: this._state.dateFrom,
       dateTo: this._state.dateTo,
       basePrice: this._state.basePrice,
-      offers: selectedOffers,
+      offers: selectedOffersObjects,
       isFavorite: false
     };
 
