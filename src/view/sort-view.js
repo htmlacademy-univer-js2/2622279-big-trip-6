@@ -56,8 +56,6 @@ export default class SortingView extends AbstractView {
     evt.preventDefault();
     const sortType = evt.target.dataset.sortType;
 
-    // Вызываем колбэк даже если сортировка та же самая
-    // Но для оптимизации можно проверять
     if (this.#onSortTypeChange) {
       this.#onSortTypeChange(sortType);
     }
@@ -71,3 +69,4 @@ export default class SortingView extends AbstractView {
     }
   }
 }
+

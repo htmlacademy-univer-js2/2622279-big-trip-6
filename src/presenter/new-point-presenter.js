@@ -7,8 +7,8 @@ const BLANK_POINT = {
   id: null,
   type: 'flight',
   destination: null,
-  dateFrom: new Date(),
-  dateTo: dayjs().add(1, 'day').toDate(),
+  dateFrom: null,
+  dateTo: null,
   basePrice: 0,
   offers: [],
   isFavorite: false
@@ -20,6 +20,8 @@ export default class NewPointPresenter {
   #pointEditComponent = null;
   #destroyCallback = null;
   #eventsModel = null;
+  #isSaving = false;
+  #hasError = false;
 
   constructor({ eventsContainer, eventsModel, onDataChange }) {
     this.#eventsContainer = eventsContainer;
@@ -29,7 +31,6 @@ export default class NewPointPresenter {
 
   init(callback) {
     this.#destroyCallback = callback;
-
     if (this.#pointEditComponent !== null) {
       return;
     }
@@ -52,10 +53,32 @@ export default class NewPointPresenter {
       return;
     }
 
-    this.#destroyCallback?.();
-    remove(this.#pointEditComponent);
+    const callback = this.#destroyCallback;
+
+    if (this.#pointEditComponent.element && this.#pointEditComponent.element.parentNode) {
+      remove(this.#pointEditComponent);
+    }
     this.#pointEditComponent = null;
     document.removeEventListener('keydown', this.#escKeyDownHandler);
+
+    if (callback) {
+      callback();
+    }
+  }
+
+  forceDestroy() {
+    if (this.#pointEditComponent === null) {
+      return;
+    }
+    if (this.#pointEditComponent.element && this.#pointEditComponent.element.parentNode) {
+      remove(this.#pointEditComponent);
+    }
+    this.#pointEditComponent = null;
+    document.removeEventListener('keydown', this.#escKeyDownHandler);
+  }
+
+  getComponent() {
+    return this.#pointEditComponent;
   }
 
   #handleFormSubmit = async (point) => {
@@ -63,22 +86,41 @@ export default class NewPointPresenter {
       this.#pointEditComponent?.shake();
       return;
     }
+    if (this.#isSaving) {
+      return;
+    }
 
+    this.#isSaving = true;
     this.#pointEditComponent?.setSaving(true);
 
     try {
-      await this.#handleDataChange(UserAction.ADD_POINT, UpdateType.MAJOR, point);
+      const pointForSubmit = {
+        ...point,
+        destination: point.destination.id || point.destination
+      };
+      await this.#handleDataChange(UserAction.ADD_POINT, UpdateType.MAJOR, pointForSubmit);
       this.destroy();
     } catch (error) {
+      this.#hasError = true;
       this.#pointEditComponent?.shake();
+      this.#pointEditComponent?.setSaving(false);
     } finally {
-      if (this.#pointEditComponent) {
-        this.#pointEditComponent.setSaving(false);
+      this.#isSaving = false;
+      if (!this.#hasError) {
+        this.#pointEditComponent?.setSaving(false);
       }
     }
   };
 
   #handleResetClick = () => {
+    if (this.#isSaving) {
+      return;
+    }
+    if (this.#hasError) {
+      this.#hasError = false;
+      this.#pointEditComponent?.setSaving(false);
+      return;
+    }
     this.destroy();
   };
 
@@ -86,29 +128,27 @@ export default class NewPointPresenter {
     if (!point.type) {
       return false;
     }
-
     if (!point.destination || !point.destination.id) {
       return false;
     }
-
     if (!point.dateFrom || !point.dateTo) {
       return false;
     }
-
     if (dayjs(point.dateTo).isBefore(dayjs(point.dateFrom))) {
       return false;
     }
-
     if (point.basePrice < 0 || isNaN(point.basePrice)) {
       return false;
     }
-
     return true;
   }
 
   #escKeyDownHandler = (evt) => {
     if (evt.key === 'Escape' || evt.key === 'Esc') {
       evt.preventDefault();
+      if (this.#isSaving) {
+        return;
+      }
       this.destroy();
     }
   };

@@ -47,3 +47,4 @@ export default class AbstractStatefulView extends AbstractView {
     throw new Error('Abstract method not implemented: _restoreHandlers');
   }
 }
+

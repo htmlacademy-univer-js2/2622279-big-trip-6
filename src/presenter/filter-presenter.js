@@ -34,15 +34,14 @@ export default class FilterPresenter {
 
   #getFilters() {
     const events = this.#eventsModel.getAllFullEvents();
+    const hasEvents = events.length > 0;
 
-    const filters = [
-      { id: FilterType.EVERYTHING, name: 'Everything', disabled: false },
-      { id: FilterType.FUTURE, name: 'Future', disabled: !events.some((event) => isPointFuture(event)) },
-      { id: FilterType.PRESENT, name: 'Present', disabled: !events.some((event) => isPointPresent(event)) },
-      { id: FilterType.PAST, name: 'Past', disabled: !events.some((event) => isPointPast(event)) },
+    return [
+      { id: FilterType.EVERYTHING, name: 'Everything', disabled: !hasEvents },
+      { id: FilterType.FUTURE, name: 'Future', disabled: !hasEvents || !events.some((event) => isPointFuture(event)) },
+      { id: FilterType.PRESENT, name: 'Present', disabled: !hasEvents || !events.some((event) => isPointPresent(event)) },
+      { id: FilterType.PAST, name: 'Past', disabled: !hasEvents || !events.some((event) => isPointPast(event)) },
     ];
-
-    return filters;
   }
 
   #renderFilters() {
@@ -78,3 +77,4 @@ export default class FilterPresenter {
     }
   };
 }
+

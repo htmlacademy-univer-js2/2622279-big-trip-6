@@ -83,7 +83,6 @@ export default class BigTripApi extends ApiService {
       offers: offerIds
     };
 
-    // Только для обновления добавляем id (при создании id не отправляем)
     if (point.id) {
       result.id = point.id;
     }
@@ -118,3 +117,4 @@ export default class BigTripApi extends ApiService {
     return offersByType;
   }
 }
+

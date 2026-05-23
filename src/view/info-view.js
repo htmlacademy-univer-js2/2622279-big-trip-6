@@ -2,7 +2,7 @@ import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
 
 function createInfoTemplate(title, startDate, endDate, cost) {
-  const formatDate = (date) => dayjs(date).format('MMM D');
+  const formatDate = (date) => dayjs(date).format('D MMM');
   const dateString = `${formatDate(startDate)}&nbsp;&mdash;&nbsp;${formatDate(endDate)}`;
 
   return `

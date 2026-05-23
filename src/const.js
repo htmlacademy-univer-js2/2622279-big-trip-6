@@ -20,6 +20,7 @@ export const UpdateType = {
   MAJOR: 'MAJOR',
   INIT: 'INIT',
   ERROR: 'ERROR',
+  LOADING: 'LOADING'
 };
 
 export const FilterType = {
@@ -28,3 +29,4 @@ export const FilterType = {
   PRESENT: 'present',
   PAST: 'past',
 };
+
