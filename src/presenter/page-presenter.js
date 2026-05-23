@@ -38,15 +38,37 @@ export default class PagePresenter {
   }
 
   #handleModelChange(updateType) {
+    if (updateType === UpdateType.LOADING) {
+      if (!this.#loadingComponent) {
+        this.#renderLoading();
+      }
+      return;
+    }
+
     if (updateType === UpdateType.INIT) {
       this.#isLoading = false;
-      remove(this.#loadingComponent);
-      this.#renderSorting();
-      this.#fullRefresh();
+      if (this.#loadingComponent) {
+        remove(this.#loadingComponent);
+        this.#loadingComponent = null;
+      }
+      const events = this.#eventsModel.getAllFullEvents();
+      if (events.length === 0) {
+        this.#renderNoPoints();
+      } else {
+        this.#renderSorting();
+        this.#fullRefresh();
+      }
     } else if (updateType === UpdateType.ERROR) {
       this.#isLoading = false;
-      remove(this.#loadingComponent);
-      this.#renderNoPoints();
+      if (this.#loadingComponent) {
+        remove(this.#loadingComponent);
+        this.#loadingComponent = null;
+      }
+      this.#eventsContainer.innerHTML = '';
+      const errorMsg = document.createElement('p');
+      errorMsg.className = 'trip-events__msg';
+      errorMsg.textContent = 'Failed to load latest route information';
+      this.#eventsContainer.appendChild(errorMsg);
     } else if (updateType === UpdateType.MAJOR) {
       this.#fullRefresh();
     } else if (updateType === UpdateType.MINOR) {
@@ -64,6 +86,18 @@ export default class PagePresenter {
       }
     }
 
+    this.#closeAllForms();
+
+    const existingMsg = document.querySelector('.trip-events__msg');
+    if (existingMsg) {
+      existingMsg.remove();
+    }
+
+    if (this.#noPointsComponent) {
+      this.#noPointsComponent.removeElement();
+      this.#noPointsComponent = null;
+    }
+
     this.#fullRefresh();
   }
 
@@ -75,6 +109,19 @@ export default class PagePresenter {
   #renderNoPoints() {
     const currentFilter = this.#filterModel.getFilter();
     this.#noPointsComponent = new NoPointsView(currentFilter);
+
+    this.#eventsContainer.innerHTML = '';
+
+    const tripInfo = document.querySelector('.trip-main__trip-info');
+    if (tripInfo) {
+      tripInfo.remove();
+    }
+
+    if (this.#sortingComponent) {
+      this.#sortingComponent.removeElement();
+      this.#sortingComponent = null;
+    }
+
     render(this.#noPointsComponent, this.#eventsContainer);
   }
 
@@ -104,6 +151,13 @@ export default class PagePresenter {
       return;
     }
 
+    this.#closeAllForms();
+
+    const addButton = document.querySelector('.trip-main__event-add-btn');
+    if (addButton) {
+      addButton.disabled = true;
+    }
+
     this.#filterModel.setFilter(UpdateType.MAJOR, FilterType.EVERYTHING);
     this.#currentSortType = SORT_TYPE.DAY;
 
@@ -114,15 +168,55 @@ export default class PagePresenter {
       }
     }
 
-    this.#resetAllEventViews();
+    if (this.#noPointsComponent) {
+      this.#noPointsComponent.removeElement();
+      this.#noPointsComponent = null;
+    }
+
+    const msgElement = document.querySelector('.trip-events__msg');
+    if (msgElement) {
+      msgElement.remove();
+    }
+
+    const listContainer = this.#getListContainer();
 
     this.#newPointPresenter = new NewPointPresenter({
-      eventsContainer: this.#eventsContainer,
+      eventsContainer: listContainer,
       eventsModel: this.#eventsModel,
       onDataChange: this.#handleViewAction
     });
+
     this.#newPointPresenter.init(() => {
       this.#newPointPresenter = null;
+
+      if (addButton) {
+        addButton.disabled = false;
+      }
+
+      const events = this.#eventsModel.getAllFullEvents();
+      if (events.length === 0) {
+        this.#renderNoPoints();
+      }
+    });
+  }
+
+  #closeAllForms() {
+    if (this.#newPointPresenter) {
+      this.#newPointPresenter.destroy();
+      this.#newPointPresenter = null;
+    }
+
+    this.#eventPresenters.forEach((presenter) => {
+      if (presenter.destroyEditForm) {
+        presenter.destroyEditForm();
+      }
+    });
+
+    const allEditForms = document.querySelectorAll('.event--edit');
+    allEditForms.forEach((form) => {
+      if (form && form.parentNode) {
+        form.parentNode.removeChild(form);
+      }
     });
   }
 
@@ -138,10 +232,19 @@ export default class PagePresenter {
           this.#newPointPresenter = null;
         }
         break;
-      case UserAction.DELETE_POINT:
+      case UserAction.DELETE_POINT: {
         await this.#eventsModel.deleteEvent(updateType, update.id);
+        const eventsAfter = this.#eventsModel.getAllFullEvents();
+        if (eventsAfter.length === 0) {
+          const tripInfo = document.querySelector('.trip-main__trip-info');
+          if (tripInfo) {
+            tripInfo.remove();
+          }
+        }
         break;
+      }
     }
+    this.#fullRefresh();
   };
 
   #getFilteredEvents() {
@@ -182,16 +285,48 @@ export default class PagePresenter {
   #clearEvents() {
     this.#eventPresenters.forEach((presenter) => presenter.destroy());
     this.#eventPresenters.clear();
+
+    const listContainer = this.#getListContainer();
+    if (listContainer) {
+      listContainer.innerHTML = '';
+    }
   }
 
   #fullRefresh() {
     this.#clearEvents();
+
+    const events = this.#eventsModel.getAllFullEvents();
+
+    if (events.length === 0) {
+      const tripInfo = document.querySelector('.trip-main__trip-info');
+      if (tripInfo) {
+        tripInfo.remove();
+      }
+      if (this.#infoComponent) {
+        this.#infoComponent.removeElement();
+        this.#infoComponent = null;
+      }
+      this.#renderNoPoints();
+      return;
+    }
+
     this.#renderInfo();
     this.#renderEvents();
   }
 
   #updateEvents() {
     this.#clearEvents();
+
+    const events = this.#eventsModel.getAllFullEvents();
+    if (events.length === 0) {
+      if (this.#infoComponent) {
+        this.#infoComponent.removeElement();
+        this.#infoComponent = null;
+      }
+      this.#renderNoPoints();
+      return;
+    }
+
     this.#renderInfo();
     this.#renderEvents();
   }
@@ -307,30 +442,53 @@ export default class PagePresenter {
     this.#fullRefresh();
   }
 
+  #getListContainer() {
+    let listContainer = this.#eventsContainer.querySelector('.trip-events__list');
+    if (!listContainer) {
+      listContainer = document.createElement('div');
+      listContainer.className = 'trip-events__list';
+      this.#eventsContainer.appendChild(listContainer);
+    }
+    return listContainer;
+  }
+
   #renderEvents() {
     const filteredEvents = this.#getFilteredEvents();
     const sortedEvents = this.#getSortedEvents(filteredEvents);
-
-    if (sortedEvents.length === 0) {
-      this.#renderNoPoints();
-      return;
-    }
 
     if (this.#noPointsComponent) {
       this.#noPointsComponent.removeElement();
       this.#noPointsComponent = null;
     }
 
-    sortedEvents.forEach((event) => this.#renderEvent(event));
+    if (sortedEvents.length === 0 && !this.#newPointPresenter) {
+      this.#renderNoPoints();
+      return;
+    }
+
+    const listContainer = this.#getListContainer();
+    listContainer.innerHTML = '';
+
+    sortedEvents.forEach((event) => this.#renderEvent(event, listContainer));
   }
 
-  #renderEvent(event) {
+  #renderEvent(event, container) {
     const eventPresenter = new EventPresenter({
-      eventsContainer: this.#eventsContainer,
+      eventsContainer: container,
       destinations: this.#eventsModel.getDestinations(),
       offers: this.#eventsModel.getOffers(),
       onDataChange: this.#handleViewAction.bind(this),
-      onModeChange: () => this.#resetAllEventViews()
+      onModeChange: () => {
+        if (this.#newPointPresenter) {
+          this.#newPointPresenter.destroy();
+          this.#newPointPresenter = null;
+        }
+        this.#eventPresenters.forEach((presenter) => {
+          if (presenter !== eventPresenter && presenter.destroyEditForm) {
+            presenter.destroyEditForm();
+          }
+        });
+      }
     });
     eventPresenter.init(event);
     this.#eventPresenters.set(event.id, eventPresenter);
@@ -344,3 +502,4 @@ export default class PagePresenter {
     this.#eventPresenters.forEach((presenter) => presenter.resetView());
   }
 }
+

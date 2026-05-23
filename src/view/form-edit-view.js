@@ -8,8 +8,8 @@ function createFormEditTemplate(state, destinations, offers) {
   const {
     type = EVENT_TYPES[0],
     destinationId = null,
-    dateFrom = new Date(),
-    dateTo = new Date(),
+    dateFrom = null,
+    dateTo = null,
     basePrice = 0,
     selectedOffers = [],
     id = null,
@@ -20,8 +20,8 @@ function createFormEditTemplate(state, destinations, offers) {
 
   const resetButtonText = id ? 'Delete' : 'Cancel';
 
-  const dateTimeFrom = dayjs(dateFrom).format('DD/MM/YY HH:mm');
-  const dateTimeTo = dayjs(dateTo).format('DD/MM/YY HH:mm');
+  const dateTimeFrom = dateFrom && dayjs(dateFrom).isValid() ? dayjs(dateFrom).format('DD/MM/YY HH:mm') : '';
+  const dateTimeTo = dateTo && dayjs(dateTo).isValid() ? dayjs(dateTo).format('DD/MM/YY HH:mm') : '';
 
   const eventTypesTemplate = EVENT_TYPES.map((eventType) => `
     <div class="event__type-item">
@@ -147,10 +147,9 @@ function createFormEditTemplate(state, destinations, offers) {
             </label>
             <input class="event__input event__input--price"
                    id="event-price-edit"
-                   type="number"
+                   type="text"
                    name="event-price"
                    value="${basePrice}"
-                   min="0"
                    autocomplete="off"
                    required>
           </div>
@@ -322,19 +321,39 @@ export default class FormEditView extends AbstractStatefulView {
     const resetBtn = this.element.querySelector('.event__reset-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', this.#resetClickHandler);
+      resetBtn.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter') {
+          evt.preventDefault();
+          this.#resetClickHandler(evt);
+        }
+      });
     }
 
     const rollupBtn = this.element.querySelector('.event__rollup-btn');
     if (rollupBtn) {
       rollupBtn.addEventListener('click', this.#rollupClickHandler);
+      rollupBtn.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter') {
+          evt.preventDefault();
+          this.#rollupClickHandler(evt);
+        }
+      });
+    }
+
+    const saveBtn = this.element.querySelector('.event__save-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter') {
+          evt.preventDefault();
+          saveBtn.click();
+        }
+      });
     }
 
     const typeInputs = this.element.querySelectorAll('.event__type-input');
     typeInputs.forEach((input) => {
       input.addEventListener('change', (evt) => {
         const newType = evt.target.value;
-
-        // Полное обновление компонента с новым типом
         this.updateElement({
           ...this._state,
           type: newType,
@@ -384,7 +403,11 @@ export default class FormEditView extends AbstractStatefulView {
     const priceInput = this.element.querySelector('.event__input--price');
     if (priceInput) {
       priceInput.addEventListener('input', (evt) => {
-        let value = evt.target.value.replace(/[^0-9]/g, '');
+        let value = evt.target.value.replace(/\D/g, '');
+        if (value === '') {
+          value = '0';
+        }
+        value = value.replace(/^0+/, '');
         if (value === '') {
           value = '0';
         }
@@ -419,9 +442,12 @@ export default class FormEditView extends AbstractStatefulView {
         enableTime: true,
         dateFormat: 'd/m/y H:i',
         'time_24hr': true,
-        defaultDate: dayjs(this._state.dateFrom).toDate(),
+        defaultDate: this._state.dateFrom ? new Date(this._state.dateFrom) : null,
         onChange: ([userDate]) => {
-          this.updateElement({ ...this._state, dateFrom: userDate });
+          this._setState({ ...this._state, dateFrom: userDate });
+          if (this.#datepickerEnd && userDate) {
+            this.#datepickerEnd.set('minDate', userDate);
+          }
         },
         locale: { firstDayOfWeek: 1 }
       });
@@ -432,11 +458,11 @@ export default class FormEditView extends AbstractStatefulView {
         enableTime: true,
         dateFormat: 'd/m/y H:i',
         'time_24hr': true,
-        defaultDate: dayjs(this._state.dateTo).toDate(),
+        defaultDate: this._state.dateTo ? new Date(this._state.dateTo) : null,
         onChange: ([userDate]) => {
-          this.updateElement({ ...this._state, dateTo: userDate });
+          this._setState({ ...this._state, dateTo: userDate });
         },
-        minDate: dayjs(this._state.dateFrom).toDate(),
+        minDate: this._state.dateFrom ? new Date(this._state.dateFrom) : null,
         locale: { firstDayOfWeek: 1 }
       });
     }

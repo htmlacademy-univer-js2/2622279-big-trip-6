@@ -13,6 +13,10 @@ export default class EventsModel extends Observable {
   }
 
   async init() {
+    this._notify(UpdateType.LOADING);
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
     try {
       const points = await this.#apiService.getPoints();
       const destinations = await this.#apiService.getDestinations();

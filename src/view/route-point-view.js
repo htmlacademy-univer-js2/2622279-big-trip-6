@@ -40,7 +40,7 @@ function createPointTemplate(point, destination, offers) {
   }
 
   const favoriteClass = isFavorite ? 'event__favorite-btn--active' : '';
-  const eventTitle = destinationName ? `${type} to ${destinationName}` : type;
+  const eventTitle = destinationName ? `${type} ${destinationName}` : type;
 
   const offersTemplate = offers && offers.length > 0 ? offers.slice(0, 3).map((offer) => `
     <li class="event__offer">
@@ -129,4 +129,29 @@ export default class RoutePointView extends AbstractView {
     evt.stopPropagation();
     this.#onFavoriteClick();
   };
+
+  shake() {
+    const element = this.element;
+    if (!element) {
+      return;
+    }
+
+    const originalMarginLeft = element.style.marginLeft;
+
+    element.style.marginLeft = '10px';
+
+    setTimeout(() => {
+      element.style.marginLeft = '-10px';
+      setTimeout(() => {
+        element.style.marginLeft = '5px';
+        setTimeout(() => {
+          element.style.marginLeft = '-5px';
+          setTimeout(() => {
+            element.style.marginLeft = originalMarginLeft;
+          }, 30);
+        }, 30);
+      }, 30);
+    }, 30);
+  }
 }
+
