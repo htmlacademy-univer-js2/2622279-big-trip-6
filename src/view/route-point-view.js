@@ -1,5 +1,7 @@
 import AbstractView from '../framework/view/abstract-view.js';
 
+const SHAKE_ANIMATION_INTERVAL = 30;
+
 function createPointTemplate(point, destination, offers) {
   const { type, dateFrom, dateTo, basePrice, isFavorite } = point;
   const destinationName = destination ? destination.name : '';
@@ -148,9 +150,9 @@ export default class RoutePointView extends AbstractView {
           element.style.marginLeft = '-5px';
           setTimeout(() => {
             element.style.marginLeft = originalMarginLeft;
-          }, 30);
-        }, 30);
-      }, 30);
-    }, 30);
+          }, SHAKE_ANIMATION_INTERVAL);
+        }, SHAKE_ANIMATION_INTERVAL);
+      }, SHAKE_ANIMATION_INTERVAL);
+    }, SHAKE_ANIMATION_INTERVAL);
   }
 }

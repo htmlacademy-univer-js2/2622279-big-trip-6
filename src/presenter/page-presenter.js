@@ -493,12 +493,4 @@ export default class PagePresenter {
     eventPresenter.init(event);
     this.#eventPresenters.set(event.id, eventPresenter);
   }
-
-  #resetAllEventViews() {
-    if (this.#newPointPresenter) {
-      this.#newPointPresenter.destroy();
-      this.#newPointPresenter = null;
-    }
-    this.#eventPresenters.forEach((presenter) => presenter.resetView());
-  }
 }

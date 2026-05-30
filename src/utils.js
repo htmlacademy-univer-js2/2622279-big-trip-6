@@ -1,4 +1,4 @@
-export const isPointFuture = (point) => {
+const isPointFuture = (point) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const pointDate = new Date(point.dateFrom);
@@ -7,7 +7,7 @@ export const isPointFuture = (point) => {
   return pointDay > today;
 };
 
-export const isPointPast = (point) => {
+const isPointPast = (point) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const pointEndDate = new Date(point.dateTo);
@@ -16,7 +16,7 @@ export const isPointPast = (point) => {
   return pointEndDay < today;
 };
 
-export const isPointPresent = (point) => {
+const isPointPresent = (point) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const start = new Date(point.dateFrom);
@@ -26,3 +26,8 @@ export const isPointPresent = (point) => {
 
   return startDate <= today && endDate >= today;
 };
+
+const isEscapeKey = (evt) => evt.key === 'Escape' || evt.key === 'Esc';
+
+export { isPointFuture, isPointPast, isPointPresent, isEscapeKey };
+

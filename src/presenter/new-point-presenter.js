@@ -2,6 +2,7 @@ import { render, remove } from '../framework/render.js';
 import FormEditView from '../view/form-edit-view.js';
 import { UserAction, UpdateType } from '../const.js';
 import dayjs from 'dayjs';
+import { isEscapeKey } from '../utils.js';
 
 const BLANK_POINT = {
   id: null,
@@ -144,7 +145,7 @@ export default class NewPointPresenter {
   }
 
   #escKeyDownHandler = (evt) => {
-    if (evt.key === 'Escape' || evt.key === 'Esc') {
+    if (isEscapeKey(evt)) {
       evt.preventDefault();
       if (this.#isSaving) {
         return;
